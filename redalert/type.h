@@ -812,6 +812,8 @@ public:
                       short const* exitlist,
                       short const* sizelist,
                       short const* overlap);
+
+    BuildingTypeClass(int btype, char const* ininame);
     operator StructType(void) const
     {
         return (Type);
@@ -829,6 +831,7 @@ public:
 
     static void Init_Heap(void);
     static BuildingTypeClass& As_Reference(StructType type);
+    static BuildingTypeClass* As_Pointer(char const* name);
     static StructType From_Name(char const* name);
     static void Init(TheaterType theater);
     static void One_Time(void);

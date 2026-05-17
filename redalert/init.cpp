@@ -218,8 +218,14 @@ bool Init_Game(int, char*[])
     **	of processing the rules.ini file, but that is a bit beyond the capabilities of
     **	the rule parser routine (currently).
     */
+    /*
+    **  Mod-defined type slots reserved past each vanilla enum count. Sized
+    **  generously enough to absorb a TD-themed building/unit/infantry/aircraft
+    **  catalogue without further tuning. Init_Heap() seeds the vanilla types
+    **  into the low slots; [NewBuildings] etc. in rules.ini fill the rest.
+    */
     HouseTypes.Set_Heap(HOUSE_COUNT);
-    BuildingTypes.Set_Heap(STRUCT_COUNT);
+    BuildingTypes.Set_Heap(STRUCT_COUNT + 50);
     AircraftTypes.Set_Heap(AIRCRAFT_COUNT);
     InfantryTypes.Set_Heap(INFANTRY_COUNT);
     BulletTypes.Set_Heap(BULLET_COUNT);

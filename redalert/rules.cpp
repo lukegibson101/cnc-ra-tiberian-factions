@@ -983,6 +983,26 @@ bool RulesClass::Objects(CCINIClass& ini)
         AircraftTypes.Ptr(aindex)->Read_INI(ini);
     }
 
+    /*
+    **  Mod-defined building types: register new entries from the [NewBuildings]
+    **  index before per-type Read_INI runs, so freshly-created entries pick up
+    **  their own section data on the same pass. Key format: "<ordinal>=<IniName>".
+    **  Existing IniNames are skipped to make the section idempotent across the
+    **  rules.ini + aftermath.ini pipeline.
+    */
+    static char const* const NEW_BUILDINGS = "NewBuildings";
+    if (ini.Is_Present(NEW_BUILDINGS)) {
+        for (int x = 0; x < ini.Entry_Count(NEW_BUILDINGS); x++) {
+            char const* key = ini.Get_Entry(NEW_BUILDINGS, x);
+            char buffer[64];
+            if (ini.Get_String(NEW_BUILDINGS, key, "", buffer, sizeof(buffer)) > 0) {
+                if (BuildingTypeClass::As_Pointer(buffer) == NULL) {
+                    new BuildingTypeClass(atoi(key), buffer);
+                }
+            }
+        }
+    }
+
     for (int bindex = 0; bindex < BuildingTypes.Count(); bindex++) {
         BuildingTypes.Ptr(bindex)->Read_INI(ini);
     }

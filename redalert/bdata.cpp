@@ -2825,6 +2825,61 @@ void BuildingTypeClass::operator delete(void* ptr)
     BuildingTypes.Free((BuildingTypeClass*)ptr);
 }
 
+/*
+**  Dynamic constructor for mod-defined building types. Used by the [NewBuildings]
+**  index in rules.ini to register a heap entry whose only initial state is its
+**  IniName; Read_INI fills in the rest, and a Logic=<vanilla type> field aliases
+**  the runtime Type discriminant to a vanilla StructType for engine dispatch.
+*/
+BuildingTypeClass::BuildingTypeClass(int btype, char const* ininame)
+    : BuildingTypeClass(static_cast<StructType>(btype),
+                        TXT_NONE,
+                        ininame,
+                        FACING_NONE,
+                        XYP_COORD(0, 0),
+                        REMAP_NORMAL,
+                        0x0000,
+                        0x0000,
+                        0x0000,
+                        false,
+                        false,
+                        false,
+                        false,
+                        true,
+                        false,
+                        true,
+                        true,
+                        false,
+                        false,
+                        false,
+                        true,
+                        RTTI_NONE,
+                        DIR_N,
+                        BSIZE_11,
+                        NULL,
+                        NULL,
+                        NULL)
+{
+}
+
+/*
+**  Name-based lookup across the full BuildingTypes heap, including mod-defined
+**  entries past STRUCT_COUNT. From_Name(char const*) only walks the vanilla
+**  enum range and therefore can't see mod-defined types.
+*/
+BuildingTypeClass* BuildingTypeClass::As_Pointer(char const* name)
+{
+    if (name == NULL)
+        return (NULL);
+    for (int index = 0; index < BuildingTypes.Count(); index++) {
+        BuildingTypeClass* btc = BuildingTypes.Ptr(index);
+        if (btc != NULL && stricmp(btc->IniName, name) == 0) {
+            return (btc);
+        }
+    }
+    return (NULL);
+}
+
 /***********************************************************************************************
  * BuildingTypeClass::Init_Heap -- Initialize the heap as necessary for the building type obje *
  *                                                                                             *
@@ -3651,6 +3706,22 @@ bool BuildingTypeClass::Read_INI(CCINIClass& ini)
         IsUnsellable = ini.Get_Bool(Name(), "Unsellable", IsUnsellable);
         IsBase = ini.Get_Bool(Name(), "BaseNormal", IsBase);
         Power = ini.Get_Int(Name(), "Power", (Power > 0) ? Power : -Drain);
+
+        /*
+        **  Logic=<vanilla-IniName> aliases this entry's runtime Type discriminant
+        **  to a vanilla StructType. Engine dispatch (factory placement, sidebar,
+        **  AI heuristics) then treats this custom building as the vanilla type.
+        **  Only honoured for mod-defined entries; vanilla entries override their
+        **  own Type by re-resolving to themselves, which is harmless.
+        */
+        char buffer[64];
+        if (ini.Get_String(Name(), "Logic", "", buffer, sizeof(buffer)) > 0) {
+            BuildingTypeClass* donor = BuildingTypeClass::As_Pointer(buffer);
+            if (donor != NULL && donor != this) {
+                Type = donor->Type;
+            }
+        }
+
         if (Power < 0) {
             Drain = -Power;
             Power = 0;
