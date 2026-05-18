@@ -6,6 +6,33 @@ This project follows a `version_high.version_low.patch` scheme matching the `ccm
 
 ## [Unreleased]
 
+## [0.3.0-phase2] — 2026-05-18 — Branch reconciliation
+
+Combined the v0.2.0 faction-bitmask work (`feature/house-good-differentiation`) with the v0.3.0 phase-1 Logic-aliased mod-building pipeline (`feature/emc-integration`). Both branches diverged from `vanilla` independently; this consolidates them onto a single trunk.
+
+### Cherry-picked from feature/house-good-differentiation
+
+- `42ef816` Initial rebrand: README, `README-VANILLA-CONQUER.md`, `deploy.sh`, rebranded `ccmod.json`.
+- `42f75ce` v0.2.0-alpha: `HOUSEF_GOOD`/`HOUSEF_BAD` detached from `HOUSEF_ALLIES`/`HOUSEF_SOVIET` in `defines.h`; `HOUSEF_GDI`/`HOUSEF_NOD` aliases added; France country slot routed to `HOUSE_GOOD` in `dllinterface.cpp`.
+- `946fb9c` v0.2.0-beta: 4-side-aware Unlimbo dispatch in `building.cpp`; `CNC_Set_Multiplayer_Data` debug dump retained.
+
+### Dropped (explicitly superseded)
+
+- `2717861` v0.2.0 revert marker — CHANGELOG/version-only, no code.
+- `7c24666` v0.3.0-alpha — the parked hardcoded-enum approach (`STRUCT_GDI_CONST`, `STRUCT_GDI_POWER`, `UNIT_GDI_MCV`) plus 17 MB of vendored TD-Assets ZIPs. Superseded by the Logic-aliased pipeline (phase 1a-f) which adds new building types via INI rather than DLL enum extension.
+- `18b5e03` "Pivot to EMC" marker — obsolete now that the pipeline shipped.
+
+### State after reconciliation
+
+- Engine pipeline (phase 1a-f) is in place: INI-defined `[NewBuildings]` entries with `Logic=<donor>` aliasing produce buildable, sidebar-rendered, art-correct buildings. Verified with `NUK2` as GDIPowerPlant on 2026-05-18.
+- Faction bitmasks are detached: `Owner=allies` no longer pulls in `HOUSE_GOOD`. Owner= semantics for the catalogue design can now target `good` / `bad` / `gdi` / `nod` for true faction separation. Effect on test data: existing `Owner=allies` entries (e.g. NUK2 testbed) need updating to target the GDI faction explicitly once catalogue design lands.
+- France country selection still routes to `HOUSE_GOOD` at the DLL boundary. Launcher UI still shows "France".
+
+### Verification
+
+- Built clean with the mingw remaster preset (145/145 objects, no errors).
+- Full Steam Deck regression test deferred until catalogue work begins — current testbed (`tiberian-factions-emc-test` Deck folder) is not affected by this consolidation since it ships its own DLL/data; the reconciled trunk deploys to a fresh `Vanilla_RA` folder per `deploy.sh`.
+
 ## [0.2.0-beta] — 2026-05-16
 
 ### Engine
