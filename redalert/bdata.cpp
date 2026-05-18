@@ -2830,9 +2830,19 @@ void BuildingTypeClass::operator delete(void* ptr)
 **  index in rules.ini to register a heap entry whose only initial state is its
 **  IniName; Read_INI fills in the rest, and a Logic=<vanilla type> field aliases
 **  the runtime Type discriminant to a vanilla StructType for engine dispatch.
+**
+**  The first param (StructType) is passed both to Type and to AbstractTypeClass::ID.
+**  Vanilla entries use their StructType enum value, which equals their heap slot
+**  because Init_Heap allocates in enum order. For mod-defined entries we must use
+**  the actual heap slot we're being allocated into — not the [NewBuildings] key —
+**  because CCPtr<BuildingTypeClass>(this) stores ptr->ID and on deref returns
+**  BuildingTypes[ID]. If ID collides with a vanilla StructType, Class lookups for
+**  this instance silently resolve to the vanilla entry at that index. The slot is
+**  BuildingTypes.Count() - 1 because operator new (Alloc) has already appended us
+**  to ActivePointers by the time the init list runs.
 */
-BuildingTypeClass::BuildingTypeClass(int btype, char const* ininame)
-    : BuildingTypeClass(static_cast<StructType>(btype),
+BuildingTypeClass::BuildingTypeClass(int /*btype*/, char const* ininame)
+    : BuildingTypeClass(static_cast<StructType>(BuildingTypes.Count() - 1),
                         TXT_NONE,
                         ininame,
                         FACING_NONE,
@@ -3724,6 +3734,63 @@ bool BuildingTypeClass::Read_INI(CCINIClass& ini)
                 Size = donor->Size;
                 OccupyList = donor->OccupyList;
                 OverlapList = donor->OverlapList;
+                // Animation + placement state — placement validation and the
+                // buildup/idle/active visual states all key on these. Without
+                // them, Logic-aliased entries build at the wrong tick rate and
+                // Unlimbo() fails because the buildup data is NULL.
+                BuildupData = donor->BuildupData;
+                for (int s = 0; s < BSTATE_COUNT; s++) {
+                    Anims[s] = donor->Anims[s];
+                }
+                FoundationFace = donor->FoundationFace;
+                StartFace = donor->StartFace;
+                ExitCoordinate = donor->ExitCoordinate;
+                ExitList = donor->ExitList;
+                ToBuild = donor->ToBuild;
+                Adjacent = donor->Adjacent;
+                Capacity = donor->Capacity;
+                // ImageData is the post-buildup idle SHP. One_Time() only
+                // loads it for vanilla heap entries; mod entries past
+                // STRUCT_COUNT never get a chance, leaving ImageData=NULL and
+                // the engine drawing with width=height=0 (invisible). Inherit
+                // donor's pointer — Logic= aliases mean engine dispatch is
+                // donor-keyed anyway, so reusing the donor's image is correct.
+                ((void const*&)ImageData) = donor->ImageData;
+            }
+        }
+
+        /*
+        **  Footprint= INI field overrides the inherited donor footprint with a
+        **  named TD-style preset. Lets a Logic-aliased building (engine behaves
+        **  like POWR) place with a different physical footprint (the actual TD
+        **  building's shape, not POWR's L-shape). Required because vanilla
+        **  RA's POWR is 2x3 with a specific OccupyList, while TD buildings have
+        **  their own footprints that don't match RA's.
+        */
+        static short const List_NUK2_OCCUPY[]  = {0, MAP_CELL_W, MAP_CELL_W + 1, REFRESH_EOL};
+        static short const List_NUK2_OVERLAP[] = {1, REFRESH_EOL};
+
+        struct FootprintPreset
+        {
+            char const* name;
+            BSizeType   size;
+            short const* occupy;
+            short const* overlap;
+        };
+        static FootprintPreset const _presets[] = {
+            // TD building footprints — copied from tiberiandawn/bdata.cpp.
+            // Add new entries as we expand the GDI/Nod catalogue.
+            {"NUK2", BSIZE_22, List_NUK2_OCCUPY, List_NUK2_OVERLAP},
+        };
+
+        if (ini.Get_String(Name(), "Footprint", "", buffer, sizeof(buffer)) > 0) {
+            for (unsigned int i = 0; i < sizeof(_presets) / sizeof(_presets[0]); i++) {
+                if (stricmp(_presets[i].name, buffer) == 0) {
+                    Size        = _presets[i].size;
+                    OccupyList  = _presets[i].occupy;
+                    OverlapList = _presets[i].overlap;
+                    break;
+                }
             }
         }
 

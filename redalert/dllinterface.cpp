@@ -27,6 +27,7 @@
 #include <string>
 #include <vector>
 #include <set>
+#include <cstdio>
 
 #include "function.h"
 #include "keyframe.h"
@@ -3355,6 +3356,14 @@ void DLLExportClass::DLL_Draw_Intercept(int shape_number,
                                         const char* shape_file_name,
                                         char override_owner)
 {
+    // Diagnostic hook removed 2026-05-18. To re-enable per-frame draw logging
+    // for a mod IniName, insert near the function entry:
+    //   if (object && stricmp(object->Class_Of().IniName, "<NAME>") == 0) {
+    //       static int s_log_count = 0; if (s_log_count < 60) { ... fprintf
+    //       to C:\users\steamuser\Documents\CnCRemastered\MOD_DEBUG.txt; ++ }
+    //   }
+    // Logs shape/x/y/w/h/flags/BState/AssetName. Rate-limit to ~60 frames so
+    // we capture spawn + buildup + early idle without blowing log size.
     CNCObjectStruct& new_object = ObjectList->Objects[TotalObjectCount + CurrentDrawCount];
     memset(&new_object, 0, sizeof(new_object));
     Convert_Type(object, new_object);
@@ -3410,18 +3419,18 @@ void DLLExportClass::DLL_Draw_Intercept(int shape_number,
         if (new_object.Type == BUILDING) {
             BuildingClass* building = (BuildingClass*)object;
 
-            /*
-            **	For Logic-aliased mod buildings (their Type is a donor's StructType,
-            **	so their IniName has no tile registration), route the launcher's
-            **	sprite lookup through the donor. The engine retains the mod class
-            **	identity for cost/name/tooltip; the launcher renders the donor's
-            **	tile, which the mod can repaint via ZIP override at the vanilla path.
-            */
+#if 0
+            // Phase 1e proxy (donor IniName → launcher) — DISABLED 2026-05-18.
+            // The launcher's sprite lookup is cross-tileset on the original IniName,
+            // so a [NewBuildings] entry using a real TD/RA tileset name (e.g. NUKE,
+            // HAND, PYLE) resolves correctly without this override. Keeping the
+            // block under #if 0 in case a future case needs a runtime IniName proxy.
             BuildingTypeClass const& donor = BuildingTypeClass::As_Reference(building->Class->Type);
             if (stricmp(donor.IniName, building->Class->IniName) != 0) {
                 strncpy(new_object.TypeName, donor.IniName, CNC_OBJECT_ASSET_NAME_LENGTH);
                 strncpy(new_object.AssetName, donor.Graphic_Name(), CNC_OBJECT_ASSET_NAME_LENGTH);
             }
+#endif
 
             if (building->BState == BSTATE_CONSTRUCTION) {
                 strncat(new_object.AssetName, "MAKE", CNC_OBJECT_ASSET_NAME_LENGTH);
@@ -4307,6 +4316,11 @@ extern "C" __declspec(dllexport) void __cdecl CNC_Handle_Sidebar_Request(Sidebar
                                                                          short cell_x,
                                                                          short cell_y)
 {
+    // Diagnostic hook removed 2026-05-18. To re-enable, fprintf at function
+    // entry to log every sidebar request (type/buildable_type/buildable_id/cell).
+    // SidebarRequestEnum values: 0=START_CONSTRUCTION 1=MULTI 2=HOLD 3=CANCEL_C
+    // 4=START_PLACEMENT 5=PLACE 6=CANCEL_PLACE. The buildable_id is the heap
+    // index of the BuildingType / UnitType / etc.
     if (!DLLExportClass::Set_Player_Context(player_id)) {
         return;
     }
@@ -5337,6 +5351,10 @@ bool DLLExportClass::Construction_Action(SidebarRequestEnum construction_action,
                                         } else {
 
                                             BuildingClass* builder = pending->Who_Can_Build_Me(false, false);
+                                            // Diagnostic hook removed 2026-05-18 (GAME_NORMAL path mirror
+                                            // of the GLYPHX path diagnostic in Get_Pending_Placement_Object).
+                                            // To re-enable, fprintf pending.Class.IniName/Type + builder
+                                            // + Manual_Place return value to MOD_DEBUG.txt here.
                                             if (!builder) {
                                                 OutList.Add(EventClass(
                                                     EventClass::ABANDON, (RTTIType)buildable_type, buildable_id));
@@ -5942,6 +5960,13 @@ BuildingClass* DLLExportClass::Get_Pending_Placement_Object(uint64 player_id, in
                                             // Map.IsTargettingMode = true;
                                         } else {
                                             BuildingClass* builder = pending->Who_Can_Build_Me(false, false);
+                                            // Diagnostic hook removed 2026-05-18. To re-enable, fprintf to
+                                            // MOD_DEBUG.txt here for: pending.Class pointer + IniName + Type +
+                                            // Ownable, builder pointer, full BuildingTypes heap tail (last 5),
+                                            // and (if builder==NULL) every Building instance candidate with
+                                            // house/ActLike/ToBuild + match flags. Critical for diagnosing
+                                            // Who_Can_Build_Me failures (CCPtr ID resolution, Ownable mismatch,
+                                            // ActLike remap issues).
                                             if (!builder) {
                                                 OutList.Add(
                                                     EventClass(EventClass::ABANDON, buildable_type, buildable_id));

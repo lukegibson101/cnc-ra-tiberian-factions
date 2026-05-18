@@ -107,6 +107,7 @@
 #include "function.h"
 #include "utracker.h"
 #include "event.h"
+#include <cstdio>
 #include "rules.h"
 
 /*
@@ -1686,6 +1687,11 @@ BuildingClass::BuildingClass(BuildingTypeClass const* typeptr, HousesType house)
     , LastStrength(0)
     , PlacementDelay(0)
 {
+    // Diagnostic hook removed 2026-05-18. To re-enable, fprintf here to log
+    // every BuildingClass instantiation with typeptr/IniName/Type/house. Used
+    // for confirming Phase 1d's pointer-based ctor receives the correct
+    // BuildingTypeClass* from Create_One_Of (vs the StructType-based legacy
+    // path that delegates through BuildingTypes.Ptr).
     House->Tracking_Add(this);
     IsSecondShot = !Class->Is_Two_Shooter();
     Strength = Class->MaxStrength;
