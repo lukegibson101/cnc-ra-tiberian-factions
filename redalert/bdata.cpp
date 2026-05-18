@@ -3711,6 +3711,8 @@ bool BuildingTypeClass::Read_INI(CCINIClass& ini)
         **  Logic=<vanilla-IniName> aliases this entry's runtime Type discriminant
         **  to a vanilla StructType. Engine dispatch (factory placement, sidebar,
         **  AI heuristics) then treats this custom building as the vanilla type.
+        **  Also inherits the donor's physical footprint (Size + occupy/overlap
+        **  lists) so placement preview, blocking, and adjacency match the donor.
         **  Only honoured for mod-defined entries; vanilla entries override their
         **  own Type by re-resolving to themselves, which is harmless.
         */
@@ -3719,6 +3721,9 @@ bool BuildingTypeClass::Read_INI(CCINIClass& ini)
             BuildingTypeClass* donor = BuildingTypeClass::As_Pointer(buffer);
             if (donor != NULL && donor != this) {
                 Type = donor->Type;
+                Size = donor->Size;
+                OccupyList = donor->OccupyList;
+                OverlapList = donor->OverlapList;
             }
         }
 
