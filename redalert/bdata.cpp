@@ -2758,6 +2758,8 @@ BuildingTypeClass::BuildingTypeClass(StructType type,
     , Power(0)
     , Drain(0)
     , Size(size)
+    , ShapeWidth(0)
+    , ShapeHeight(0)
     , OccupyList(sizelist)
     , OverlapList(overlap)
     , BuildupData(0)
@@ -3127,6 +3129,94 @@ void BuildingTypeClass::One_Time(void)
     for (unsigned index = 0; index < (sizeof(_anims) / sizeof(_anims[0])); index++) {
         As_Reference(_anims[index].Class)
             .Init_Anim(_anims[index].Stage, _anims[index].Start, _anims[index].Length, _anims[index].Rate);
+    }
+
+    /*
+    **  D1 decouple — per-entry asset load for mod-defined building types
+    **  past STRUCT_COUNT. These entries were created from [NewBuildings]
+    **  during Rule.Process before One_Time ran; the vanilla loop above
+    **  skipped them, leaving ImageData=NULL (Draw_It early-returns) and
+    **  Get_Build_Frame_Width/Height(ImageData) reading donor dimensions via
+    **  the Logic= inheritance — which is what leaks APWR's 3x3 scale onto
+    **  TDNUK2's 2x2 footprint. Loading each entry's own SHP keyed by
+    **  Graphic_Name() (Image= rules.ini field, fallback IniName) gives the
+    **  launcher's CNCObjectStruct.Width/Height the right per-entry pixel
+    **  dimensions and lets Draw_It find a real shapefile.
+    */
+    /*
+    **  Diagnostic — log what MFCD::Retrieve returns for each mod entry's
+    **  asset lookups. Tells us whether NUK2.SHP / NUKEMAKE.SHP etc. are
+    **  resolvable in the mixfile registry, or coming back NULL.
+    */
+    FILE* mod_log = NULL;
+    {
+        char mpath[512];
+        const char* mprof = getenv("USERPROFILE");
+        if (mprof != NULL && mprof[0] != '\0') {
+            snprintf(mpath, sizeof(mpath),
+                     "%s/Documents/CnCRemastered/tf_mod_one_time.log", mprof);
+        } else {
+            strcpy(mpath, "tf_mod_one_time.log");
+        }
+        mod_log = fopen(mpath, "w");
+        if (mod_log != NULL) {
+            fprintf(mod_log, "BuildingTypes.Count()=%d STRUCT_COUNT=%d\n",
+                    BuildingTypes.Count(), STRUCT_COUNT);
+            fflush(mod_log);
+        }
+    }
+
+    for (int sindex = STRUCT_COUNT; sindex < BuildingTypes.Count(); sindex++) {
+        BuildingTypeClass& building = *BuildingTypes.Ptr(sindex);
+        char fullname[_MAX_FNAME + _MAX_EXT];
+        char buffer[_MAX_FNAME + 4];
+
+        void const* cameo_before = building.CameoData;
+        void const* buildup_before = building.BuildupData;
+        void const* image_before = building.ImageData;
+
+        if (building.Level != -1) {
+            sprintf(buffer, "%sICON", building.Graphic_Name());
+            if (building.IsFake) {
+                buffer[3] = 'F';
+            }
+            _makepath(fullname, NULL, NULL, buffer, ".SHP");
+            ((void const*&)building.CameoData) = MFCD::Retrieve(fullname);
+        }
+
+        sprintf(buffer, "%sMAKE", building.Graphic_Name());
+        _makepath(fullname, NULL, NULL, buffer, ".SHP");
+        void const* dataptr = MFCD::Retrieve(fullname);
+        ((void const*&)building.BuildupData) = dataptr;
+        if (dataptr != NULL) {
+            int timedelay = 1;
+            int count = Get_Build_Frame_Count(dataptr);
+            if (count > 0) {
+                timedelay = (Rule.BuildupTime * TICKS_PER_MINUTE) / count;
+            }
+            building.Init_Anim(BSTATE_CONSTRUCTION, 0, count, timedelay);
+        }
+
+        _makepath(fullname, NULL, NULL, building.Graphic_Name(), ".SHP");
+        ((void const*&)building.ImageData) = MFCD::Retrieve(fullname);
+
+        if (mod_log != NULL) {
+            fprintf(mod_log,
+                    "[%d] IniName=%s GraphicName=%s Type=%d Size=%d "
+                    "ImageData: before=%p after=%p (looking for %s.SHP) | "
+                    "BuildupData: before=%p after=%p (looking for %sMAKE.SHP) | "
+                    "CameoData: before=%p after=%p\n",
+                    sindex, building.IniName, building.Graphic_Name(),
+                    (int)building.Type, (int)building.Size,
+                    image_before, building.ImageData, building.Graphic_Name(),
+                    buildup_before, building.BuildupData, building.Graphic_Name(),
+                    cameo_before, building.CameoData);
+            fflush(mod_log);
+        }
+    }
+
+    if (mod_log != NULL) {
+        fclose(mod_log);
     }
 }
 
@@ -3792,6 +3882,26 @@ bool BuildingTypeClass::Read_INI(CCINIClass& ini)
                     OverlapList = _presets[i].overlap;
                     break;
                 }
+            }
+        }
+
+        /*
+        **  ShapeSize=W,H — EMC-style explicit pixel dimensions for the
+        **  launcher-rendered sprite. Without this, the legacy SHP path
+        **  passes width=height=0 to DLL_Draw_Intercept (because the mod
+        **  entry's SHP isn't in the mixfile registry), and the Remastered
+        **  launcher falls back to TGA-native pixel size — which varies
+        **  per asset since TD-Assets's TGAs were drawn with different
+        **  building-to-canvas ratios. Setting explicit W,H here gives the
+        **  launcher a concrete dim to scale the TGA to, normalising scale
+        **  across the catalogue. Convention: W = Width()*24, H = Height()*24
+        **  to match the legacy ICON_PIXEL_W/H tile size.
+        */
+        if (ini.Get_String(Name(), "ShapeSize", "", buffer, sizeof(buffer)) > 0) {
+            int sw = 0, sh = 0;
+            if (sscanf(buffer, "%d,%d", &sw, &sh) == 2 && sw > 0 && sh > 0) {
+                ShapeWidth  = sw;
+                ShapeHeight = sh;
             }
         }
 

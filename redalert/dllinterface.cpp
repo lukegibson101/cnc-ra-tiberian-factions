@@ -3459,49 +3459,73 @@ void DLLExportClass::DLL_Draw_Intercept(int shape_number,
                                         const char* shape_file_name,
                                         char override_owner)
 {
+    /*
+    **  ShapeSize override — for mod-defined buildings whose donor SHP
+    **  doesn't exist in the legacy mixfile registry, Get_Build_Frame_Width
+    **  returns 0,0 and the launcher falls back to TGA-native pixel size
+    **  (which differs per asset). If the BTC has ShapeSize= set in
+    **  rules.ini, replace width/height before they go into CNCObjectStruct
+    **  so the launcher scales the TGA to those explicit dimensions
+    **  instead. EMC-equivalent path — see TD-Assets workshop docs.
+    */
+    if (object != NULL && object->What_Am_I() == RTTI_BUILDING) {
+        BuildingTypeClass const* btc_for_size = (BuildingTypeClass const*)&object->Class_Of();
+        if (btc_for_size->ShapeWidth > 0 && btc_for_size->ShapeHeight > 0) {
+            width  = btc_for_size->ShapeWidth;
+            height = btc_for_size->ShapeHeight;
+        }
+    }
+
     // Diagnostic 2026-05-19: log Draw calls for TD-prefixed buildings to
     // see what AssetName / shape_file_name the engine passes. Keep until
-    // v1.0 per [[feedback-keep-diagnostics-until-v1]]. Rate-limited.
-    if (object != NULL && object->What_Am_I() == RTTI_BUILDING
-        && (stricmp(object->Class_Of().IniName, "TDNUK2") == 0
-            || stricmp(object->Class_Of().IniName, "TDNUKE") == 0)) {
-        static FILE* s_draw_log = NULL;
-        static int s_draw_count = 0;
-        if (s_draw_count < 60) {
-            if (s_draw_log == NULL) {
-                char dpath[512];
-                const char* dprof = getenv("USERPROFILE");
-                if (dprof != NULL && dprof[0] != '\0') {
-                    snprintf(dpath, sizeof(dpath),
-                             "%s/Documents/CnCRemastered/tf_draw_intercept.log", dprof);
-                } else {
-                    strcpy(dpath, "tf_draw_intercept.log");
+    // v1.0 per [[feedback-keep-diagnostics-until-v1]]. Per-IniName rate
+    // limited so TDNUKE's continuous draws don't starve TDNUK2 entries.
+    if (object != NULL && object->What_Am_I() == RTTI_BUILDING) {
+        BuildingTypeClass const* btc = (BuildingTypeClass const*)&object->Class_Of();
+        bool is_nuke = stricmp(btc->IniName, "TDNUKE") == 0;
+        bool is_nuk2 = stricmp(btc->IniName, "TDNUK2") == 0;
+        if (is_nuke || is_nuk2) {
+            static FILE* s_draw_log = NULL;
+            static int s_nuke_count = 0;
+            static int s_nuk2_count = 0;
+            int* count_ptr = is_nuk2 ? &s_nuk2_count : &s_nuke_count;
+            if (*count_ptr < 30) {
+                if (s_draw_log == NULL) {
+                    char dpath[512];
+                    const char* dprof = getenv("USERPROFILE");
+                    if (dprof != NULL && dprof[0] != '\0') {
+                        snprintf(dpath, sizeof(dpath),
+                                 "%s/Documents/CnCRemastered/tf_draw_intercept.log", dprof);
+                    } else {
+                        strcpy(dpath, "tf_draw_intercept.log");
+                    }
+                    s_draw_log = fopen(dpath, "w");
                 }
-                s_draw_log = fopen(dpath, "w");
-            }
-            if (s_draw_log != NULL) {
-                BuildingTypeClass const* btc = (BuildingTypeClass const*)&object->Class_Of();
-                int dimx = 0, dimy = 0;
-                btc->Dimensions(dimx, dimy);
-                int btc_w = btc->Width();
-                int btc_h = btc->Height();
-                int occ_len = 0;
-                short const* occ = btc->Occupy_List(false);
-                if (occ != NULL) {
-                    while (occ[occ_len] != REFRESH_EOL && occ_len < 32) occ_len++;
+                if (s_draw_log != NULL) {
+                    int dimx = 0, dimy = 0;
+                    btc->Dimensions(dimx, dimy);
+                    int btc_w = btc->Width();
+                    int btc_h = btc->Height();
+                    int occ_len = 0;
+                    short const* occ = btc->Occupy_List(false);
+                    if (occ != NULL) {
+                        while (occ[occ_len] != REFRESH_EOL && occ_len < 32) occ_len++;
+                    }
+                    fprintf(s_draw_log,
+                            "Draw IniName=%s GraphicName=%s shape_file_name=%s shape#=%d "
+                            "w=%d h=%d scale=%ld | btc.Size=%d btc.W()=%d btc.H()=%d "
+                            "Dim=(%d,%d) Type=%d OccupyLen=%d "
+                            "ImageData=%p BuildupData=%p CameoData=%p\n",
+                            btc->IniName,
+                            (btc->Graphic_Name() != NULL ? btc->Graphic_Name() : "(null)"),
+                            (shape_file_name != NULL ? shape_file_name : "(null)"),
+                            shape_number, width, height, scale,
+                            (int)btc->Size, btc_w, btc_h, dimx, dimy,
+                            (int)btc->Type, occ_len,
+                            btc->Get_Image_Data(), btc->Get_Buildup_Data(), btc->Get_Cameo_Data());
+                    fflush(s_draw_log);
+                    (*count_ptr)++;
                 }
-                fprintf(s_draw_log,
-                        "Draw IniName=%s GraphicName=%s shape_file_name=%s shape#=%d "
-                        "w=%d h=%d scale=%ld | btc.Size=%d btc.W()=%d btc.H()=%d "
-                        "Dim=(%d,%d) Type=%d OccupyLen=%d\n",
-                        btc->IniName,
-                        (btc->Graphic_Name() != NULL ? btc->Graphic_Name() : "(null)"),
-                        (shape_file_name != NULL ? shape_file_name : "(null)"),
-                        shape_number, width, height, scale,
-                        (int)btc->Size, btc_w, btc_h, dimx, dimy,
-                        (int)btc->Type, occ_len);
-                fflush(s_draw_log);
-                s_draw_count++;
             }
         }
     }
