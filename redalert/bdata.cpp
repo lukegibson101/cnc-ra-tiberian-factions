@@ -3780,6 +3780,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass& ini)
         static FootprintPreset const _presets[] = {
             // TD building footprints — copied from tiberiandawn/bdata.cpp.
             // Add new entries as we expand the GDI/Nod catalogue.
+            {"NUKE", BSIZE_22, List_NUK2_OCCUPY, List_NUK2_OVERLAP},   // shares NUK2's 2x2 L-shape
             {"NUK2", BSIZE_22, List_NUK2_OCCUPY, List_NUK2_OVERLAP},
         };
 
@@ -3792,6 +3793,21 @@ bool BuildingTypeClass::Read_INI(CCINIClass& ini)
                     break;
                 }
             }
+        }
+
+        /*
+        **  Per-building idle-animation override. TD passive animations
+        **  (e.g. NUKE's blinking generator) require Anims[BSTATE_IDLE] to
+        **  cycle multiple frames, but Logic= aliasing inherits the donor's
+        **  Anims which may be static (POWR has no idle anim entry in the
+        **  hardcoded _anims[] table). Setting IdleAnimCount>1 turns on
+        **  cycling for the mod entry without touching the donor.
+        */
+        int idle_count = ini.Get_Int(Name(), "IdleAnimCount", -1);
+        if (idle_count > 0) {
+            int idle_start = ini.Get_Int(Name(), "IdleAnimStart", 0);
+            int idle_rate  = ini.Get_Int(Name(), "IdleAnimRate", 4);
+            Init_Anim(BSTATE_IDLE, idle_start, idle_count, idle_rate);
         }
 
         if (Power < 0) {

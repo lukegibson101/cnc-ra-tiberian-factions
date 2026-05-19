@@ -1,6 +1,45 @@
 # Adding a TD building as a buildable in our RA mod
 
-End-to-end recipe to add a new TD-themed building to the GDI or Nod faction. Verified against `NUK2` (Nod Advanced Power Plant) on 2026-05-18.
+End-to-end recipe to add a new TD-themed building to the GDI or Nod faction. Verified against `NUK2` (Phase 1f, 2026-05-18) and re-verified against `TDNUKE` (v0.3 phase 3a, 2026-05-19, after the lessons below were absorbed).
+
+## v0.3 lessons (must read before adding new entries)
+
+Three non-obvious gotchas the recipe didn't originally cover. Skip these and the entry registers but doesn't behave correctly.
+
+### 1. IniName collisions silently break the entry
+
+`[NewBuildings]` registration in `rules.cpp` only creates a mod entry when `BuildingTypeClass::As_Pointer(buffer) == NULL`. So if your IniName matches a vanilla RA building (HPAD, GUN, SAM, AFLD, WEAP, FIX, PROC, SILO, FACT) the registration is skipped silently and your `[<NAME>]` section overrides the **vanilla** building instead.
+
+Similarly, INI section names live in a flat namespace: warhead/animation/sound sections share it. `NUKE` is a vanilla RA WarheadType. If you register a building with that IniName, `[NewBuildings]` succeeds (warheads aren't BuildingTypes) but `TechnoTypeClass::Read_INI` then sees the warhead's 7 entries (`Spread`, `Wall`, `Wood`, `Ore`, `Verses`, `Explosion`, `InfDeath`) instead of your building's fields. Result: building appears in the heap with default-everything (Ownable=0, Level=-1) and never builds.
+
+**Rule:** prefix every catalogue IniName with `TD` (e.g. `TDNUKE`, `TDPYLE`, `TDHAND`). `Image=` and `Footprint=` and the sprite ZIPs keep the unprefixed TD asset name — those don't collide.
+
+### 2. Damaged-state shape is auto-derived from Anims[BSTATE_IDLE].Count
+
+When `Health_Ratio() <= ConditionYellow`, `BuildingClass::Shape_Number()` shifts the rendered shape by `largest = max(Anims[*].Start + Count)` across IDLE/ACTIVE/AUX1/AUX2. So:
+
+- **Static building (Count=1):** largest=1, shape 1 = damaged variant. The recipe's "remap shape 1 to nuke-0004.tga" trick works here.
+- **Animated building (Count=N):** largest=N, shape N = damaged variant of shape 0, shape N+1 = damaged of shape 1, etc. **Do NOT remap shape 1** — it's a normal idle frame in the cycle. The TGA frames are already laid out 0..N-1 normal, N..2N-1 damaged; the engine handles the shift automatically.
+
+### 3. Mod entries don't inherit the donor's idle animation
+
+`Logic=POWR` inherits POWR's BuildingTypeClass static fields (Size, OccupyList, ImageData, etc.) and POWR's Anims[]. But POWR has no idle anim entry in the hardcoded `_anims[]` table in `One_Time()`, so Anims[BSTATE_IDLE] is `{0, 1, 0}` (static). For a TD building with a cyclic idle (NUKE blinks, PYLE animates, HQ rotates dish), set rules.ini override fields:
+
+```ini
+IdleAnimStart=0
+IdleAnimCount=4
+IdleAnimRate=15
+```
+
+Per-building TD-authentic values are in the master flag table in `docs/catalogue.md`. The override is applied after Logic= aliasing in `BuildingTypeClass::Read_INI`.
+
+### 4. Crewed / Repairable inherit from neither
+
+`TechnoTypeClass::Read_INI` parses `Crewed=` and `Repairable=` from rules.ini, defaulting to the current value. For mod entries the current value is the dynamic ctor default (false / unset). Vanilla buildings get these from their `[POWR]`-style rules.ini section. So you must set `Crewed=yes` and `Repairable=yes` (or per-building TD values) explicitly in every entry, otherwise sell/destroy produces no infantry and the wrench-tool can't target the building.
+
+Per-building TD-authentic Crewed/Repairable/Capturable values: see master flag table in `docs/catalogue.md`. Notably: SILO/HPAD/SAM are Crew=no (TD canon); GTWR/ATWR/OBLI/GUN/SAM/EYE/TMPL are Capturable=no.
+
+---
 
 ## What "adding" means here
 

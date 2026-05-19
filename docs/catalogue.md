@@ -4,21 +4,55 @@ Design spec for the new buildings we're adding via the Logic-aliased mod-buildin
 
 ## Session pickup
 
-**Current state (end of 2026-05-19 session):**
-- Branch reconciliation done (3 cherry-picks + CHANGELOG/version on `feature/emc-integration`, pushed).
-- Reconciled DLL Deck-verified end-to-end (detachment proof + GDI-rebuild proof, both phases passed).
-- This catalogue committed as the v0.3 source of truth — all 7 open design questions resolved.
-- Memory note saved: TD passive animations don't play on Logic-aliased mod buildings; fix as one shared pass after ~5+ entries built (see `project-td-passive-animations` memory).
+**Current state (end of 2026-05-19 evening session):**
+- v0.3 baseline pulled from Deck into `resources/remaster_mods/Vanilla_RA/` (committed source tree).
+- Manual NUKE entry implemented + Deck-verified end-to-end (sidebar icon, cost, TD sprite, 2×2 footprint, buildup → idle animation cycling 0-3, damaged variant via auto-shift to shapes 4-7, sell/destroy spawns crew). See [[v0_3_phase3a_findings]].
+- **Two non-obvious lessons baked in below:**
+  1. **IniName collisions.** Vanilla RA building IniNames (HPAD, GUN, SAM, AFLD, WEAP, FIX, PROC, SILO, FACT) AND warhead/section names (NUKE, etc.) live in the same INI namespace. Using a collision IniName silently skips the mod-entry registration. **Mandatory TD prefix on all catalogue IniNames** (`TDNUKE`, `TDPYLE`, etc.).
+  2. **Damaged-state shapes auto-derive from idle anim.** For `Anims[BSTATE_IDLE].Count == N`, the engine renders shapes `0..N-1` as normal and shapes `N..2N-1` as damaged. So a Count=1 building has shape 1 = damaged (the recipe's original assumption); a Count=4 building has shape 4 = damaged. **Don't remap shape 1 to a damage frame unless the building is static (Count=1).**
 
-**Where to start next session:** **Phase 1 of v0.3** — GDI catalogue buildout.
-1. Write a helper script (`scripts/add_building.py` or similar) that takes `(IniName, Logic, Cost, Power, Strength, Owner, Faction)` and produces all 5 data-file edits per the 6-step recipe: `CCDATA/rules.ini` append, `Data/XML/TILESETS/RA_STRUCTURES.XML` tile blocks, sprite ZIP extraction from MEG, `redalert/bdata.cpp` Footprint preset append, and `Data/XML/OBJECTS/UNITS/RABUILDABLES.XML` sidebar entry. The 18× repetition makes this worth ~30 minutes upfront.
-2. Use the script to add NUKE first (simplest entry: same footprint as NUK2, no prereq, both factions). Confirms the script works.
-3. Then knock through NUK2 migration (POC values → TD-authentic), PYLE, HQ, WEAP, FIX, GTWR, ATWR, HPAD, EYE.
+**Where to start next session:** **Phase 1 of v0.3** — GDI catalogue buildout via `scripts/add_building.py`.
+1. Write the helper script keyed off the master flag table below.
+2. Run for each catalogue entry. NUKE is done (reference implementation).
+3. Then NUK2 (Phase 1 POC value migration), PYLE, HQ, WEAP, FIX, GTWR, ATWR, HPAD, EYE for GDI catalogue.
 
 **Testbed state on the Deck (`Red_Alert/tiberian-factions-emc-test/`):**
-- Reconciled DLL deployed (`27,656,898` bytes; `RedAlert.dll.bak-pre-reconciliation` alongside for rollback).
-- `CCDATA/rules.ini` has NUK2 and TESTFACT with `Owner=GoodGuy` (Phase B test residue — useful for further GDI iteration, not Allied/Soviet testing). Flip back to `Owner=allies` on those two entries if you want the Allied baseline back.
-- Real v0.3 builds will deploy to `Red_Alert/Vanilla_RA/` via `deploy.sh` — the testbed folder stays as a reference. For rapid iteration, deploying into the testbed is fine.
+- v0.3 DLL + TDNUKE deployed and verified.
+- `Red_Alert/Vanilla_RA/` is the intended v0.3 final deploy path; the testbed remains for rapid iteration.
+
+---
+
+## Master flag table (TD-authentic, v0.3 source of truth)
+
+Per-building flags extracted from `tiberiandawn/bdata.cpp`. These are the values `add_building.py` reads. **IniName** is the catalogue IniName (TD-prefixed); **Image/Footprint/sprite ZIPs** keep the unprefixed TD asset names.
+
+| IniName | Faction | Donor | Cost | Power | HP | Sight | Adj | Armor | Bib | Cap | Crew | Repair | Idle:Start/Count/Rate | Notes |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| TDNUKE | both  | POWR | 300  | +100 | 200  | 2 | 1 | wood     | yes | yes | yes | yes | 0/4/15  | TD lvl 0 |
+| TDNUK2 | both  | APWR | 700  | +200 | 300  | 2 | 1 | wood     | yes | yes | yes | yes | 0/4/15  | TD lvl 5, prereq TDNUKE |
+| TDPROC | both  | PROC | 2000 | -40  | 900  | 4 | 1 | wood     | yes | yes | yes | yes | 0/6/4   | TD lvl 1, has dock/siphon cycles — keep RA donor behaviour |
+| TDSILO | both  | SILO | 150  | -10  | 300  | 2 | 1 | wood     | yes | yes | no  | yes | —       | TD lvl 1 — capacity-based shape, not a cycle |
+| TDPYLE | GDI   | TENT | 300  | -20  | 800  | 3 | 1 | wood     | yes | yes | yes | yes | 0/10/3  | TD lvl 0 |
+| TDHAND | Nod   | BARR | 300  | -20  | 800  | 3 | 1 | wood     | yes | yes | yes | yes | 0/10/3  | TD lvl 0, 2×3 footprint |
+| TDWEAP | GDI   | WEAP | 2000 | -30  | 1000 | 3 | 1 | aluminum | yes | yes | yes | yes | 0/1/0   | TD lvl 2, static idle |
+| TDAFLD | Nod   | WEAP | 2000 | -30  | 1000 | 5 | 1 | steel    | yes | yes | yes | yes | 0/16/3  | TD lvl 2, 4×2, AIRSTRIP anim spec |
+| TDHQ   | both  | DOME | 1000 | -40  | 1000 | 10| 1 | wood     | yes | yes | yes | yes | 0/16/4  | TD lvl 2, radar |
+| TDEYE  | GDI   | MSLO | 2800 | -200 | 500  | 10| 1 | wood     | yes | **no** | yes | yes | 0/16/4 | TD lvl 7, GDI superweapon host |
+| TDTMPL | Nod   | MSLO | 3000 | -150 | 1000 | 4 | 1 | aluminum | yes | **no** | yes | yes | 0/1/0  | TD lvl 7, Nod superweapon host |
+| TDFIX  | both  | FIX  | 1200 | -30  | 800  | 3 | 1 | wood     | yes | yes | yes | yes | 0/1/0   | TD lvl 5, ACTIVE 0/7/2 |
+| TDHPAD | both  | HPAD | 1500 | -10  | 800  | 3 | 1 | wood     | yes | yes | **no** | yes | 0/0/0 | TD lvl 6, no idle anim |
+| TDGTWR | GDI   | PBOX | 500  | -10  | 200  | 3 | 1 | wood     | no  | **no** | yes | yes | —     | TD lvl 2, 1×1 |
+| TDATWR | GDI   | AGUN | 1000 | -20  | 300  | 4 | 1 | aluminum | no  | **no** | yes | yes | —     | TD lvl 4, 1×2 |
+| TDOBLI | Nod   | TSLA | 1500 | -150 | 200  | 5 | 1 | aluminum | no  | **no** | yes | yes | —     | TD lvl 4, 1×2, ACTIVE 0/4/RATE |
+| TDGUN  | Nod   | GUN  | 600  | -20  | 200  | 5 | 1 | steel    | no  | **no** | yes | yes | —     | TD lvl 2, 1×1 |
+| TDSAM  | Nod   | SAM  | 750  | -20  | 200  | 3 | 1 | steel    | no  | **no** | **no** | yes | — | TD lvl 6, 2×1, turret-based |
+| TDFACT | both  | FACT | 5000 | -30  | 400  | 3 | 1 | wood     | yes | yes | yes | yes | 0/4/3   | TD lvl 99, ACTIVE 4/20/3 — closing v0.3 slice |
+
+**Reading the table:**
+- Empty `Idle` column = no idle animation (engine renders shape 0 statically). Damaged state = shape 1 in that case (the engine's `largest = max(Anims[*].Start + Count) = 1` auto-shift).
+- `Crew=no` means selling/destroying spawns zero infantry (TD canon for SILO/HPAD/SAM).
+- `Cap=no` (bold) marks entries where TD authentic differs from the original catalogue spec — defensive structures and superweapon hosts can't be captured. **TMPL and EYE are NOT capturable per TD.**
+- Logic= aliases the engine donor; field overrides come via rules.ini per the recipe.
 
 ---
 
@@ -67,6 +101,14 @@ Design spec for the new buildings we're adding via the Logic-aliased mod-buildin
 | IRON | Iron Curtain (superweapon — invuln beam) | |
 | PDOX | Chronosphere (superweapon — teleport) | |
 | AFLD | Airfield (Soviet vehicle delivery via plane) | |
+
+---
+
+## Per-entry sections — design rationale
+
+The sections below capture **design rationale and donor choice** for each catalogue entry. The flag values shown in per-entry field tables are illustrative — the **master flag table above is the canonical source** the script reads. Where they disagree, the master table wins.
+
+Entry names below use the TD asset name (e.g. "PYLE", "HAND") for readability; the actual IniName in rules.ini is TD-prefixed (`TDPYLE`, `TDHAND`, etc.) to avoid the vanilla-RA collision class documented in `docs/adding-td-buildings.md`.
 
 ---
 
@@ -564,28 +606,28 @@ This is one cohesive slice — likely a 1-2 session implementation.
 
 ## Walkthrough status
 
-| TD | Faction | Donor | Stats? | Status |
+| IniName | Faction | Donor | Stats? | Status |
 |---|---|---|---|---|
-| NUKE | both | POWR | ✓ | 📝 |
-| NUK2 | both | APWR | ✓ | ✅ (POC) → 📝 migrate |
-| PROC | both | PROC | ✓ | 📝 |
-| SILO | both | SILO | ✓ | 📝 |
-| PYLE | GDI | TENT | ✓ | 📝 |
-| HAND | Nod | BARR | ✓ | 📝 |
-| HPAD | both | HPAD | ✓ | 📝 |
-| WEAP | GDI | WEAP | ✓ | 📝 |
-| AFLD | Nod | WEAP | ✓ | 📝 🚧 (cargo-plane engine slice within Nod buildout) |
-| HQ | both | DOME | ✓ | 📝 |
-| EYE | GDI | MSLO | ✓ | 📝 🚧 (Ion Cannon visual v0.4) |
-| TMPL | Nod | MSLO | ✓ | 📝 🚧 |
-| FIX | both | FIX | ✓ | 📝 |
-| GTWR | GDI | PBOX | ✓ | 📝 |
-| ATWR | GDI | AGUN | ✓ | 📝 |
-| OBLI | Nod | TSLA | ✓ | 📝 |
-| GUN | Nod | GUN | ✓ | 📝 |
-| SAM | Nod | SAM | ✓ | 📝 |
-| FACT | both (split) | FACT | ✓ | 📝 🚧 v0.3 closing slice |
-| GDIMCV / NODMCV | per faction | MCV (unit) | — | 📝 🚧 paired with FACT |
+| TDNUKE | both | POWR | ✓ | ✅ manual ref impl 2026-05-19 |
+| TDNUK2 | both | APWR | ✓ | ✅ (Phase-1 POC) → 📝 migrate to TD-authentic |
+| TDPROC | both | PROC | ✓ | 📝 |
+| TDSILO | both | SILO | ✓ | 📝 |
+| TDPYLE | GDI | TENT | ✓ | 📝 |
+| TDHAND | Nod | BARR | ✓ | 📝 |
+| TDHPAD | both | HPAD | ✓ | 📝 |
+| TDWEAP | GDI | WEAP | ✓ | 📝 |
+| TDAFLD | Nod | WEAP | ✓ | 📝 🚧 (cargo-plane engine slice within Nod buildout) |
+| TDHQ | both | DOME | ✓ | 📝 |
+| TDEYE | GDI | MSLO | ✓ | 📝 🚧 (Ion Cannon visual v0.4) |
+| TDTMPL | Nod | MSLO | ✓ | 📝 🚧 |
+| TDFIX | both | FIX | ✓ | 📝 |
+| TDGTWR | GDI | PBOX | ✓ | 📝 |
+| TDATWR | GDI | AGUN | ✓ | 📝 |
+| TDOBLI | Nod | TSLA | ✓ | 📝 |
+| TDGUN | Nod | GUN | ✓ | 📝 |
+| TDSAM | Nod | SAM | ✓ | 📝 |
+| TDFACT | both (split) | FACT | ✓ | 📝 🚧 v0.3 closing slice |
+| TDGDIMCV / TDNODMCV | per faction | MCV (unit) | — | 📝 🚧 paired with TDFACT |
 | HOSP/BIO/ARCO | — | — | — | skip for v0.3 |
 
 ---
