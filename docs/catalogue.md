@@ -129,12 +129,14 @@ deferred until the unit catalogue work). Numbers match the user's report:
    indicator on TDPROC when a harvester is on its way back, so the player
    knows ore is incoming.
 
-3. **TDSILO renders with a 1×1 placement grid, should be 2×1.** Our manifest
+3. **TDSILO renders with a 1×1 placement grid, should be 2×2.** Our manifest
    has `shape_size: (48, 24)` (2 wide × 1 tall) but no `footprint` override,
-   so it inherits the RA SILO donor's BSIZE_21 footprint. Worth a Footprint=
-   preset addition in `bdata.cpp` to confirm the engine sees 2×1; possibly
-   also need `shape_size: (48, 48)` if the visual sprite is taller than the
-   footprint suggests.
+   so it inherits the RA SILO donor's BSIZE_21 footprint. TD-authentic is
+   2×2. Needs both a new `SILO` Footprint= preset in `bdata.cpp` (BSIZE_22
+   with appropriate occupy/overlap lists) AND `shape_size: (48, 48)` in the
+   manifest so the launcher renders the sprite at the correct 2-cell-tall
+   scale. Cross-check against TD's source `tiberiandawn/bdata.cpp` ClassSilo
+   for the authentic ListSilo / OListSilo cell pattern.
 
 4. **TDEYE renders no on-map sprite + has a 2×2 placement grid, should be
    L-shape (top-row overlap + bottom-row occupy, like NUK2).** Two bugs:
