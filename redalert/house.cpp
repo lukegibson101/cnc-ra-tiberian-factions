@@ -836,10 +836,18 @@ bool HouseClass::Can_Build(ObjectTypeClass const* type, HousesType house) const
     // Windows (whatever the user's profile is) and Wine/Proton (where
     // USERPROFILE points to drive_c/users/steamuser). Falls back to CWD if
     // the env var is unset.
-    if (type->IniName[0] == 'T' && type->IniName[1] == 'D') {
+    // Capture: TD-prefixed buildings (always) + E-prefix infantry (E1..E9,
+    // for the 2026-05-20 GDI roster bring-up where E3 isn't appearing in the
+    // sidebar despite Owner=allies,soviet,GoodGuy,BadGuy + Prerequisite=tent
+    // + TDPYLE built). Logging RTTI distinguishes the two streams.
+    bool log_td = (type->IniName[0] == 'T' && type->IniName[1] == 'D');
+    bool log_einf = (type->What_Am_I() == RTTI_INFANTRYTYPE
+                     && type->IniName[0] == 'E'
+                     && type->IniName[1] >= '0' && type->IniName[1] <= '9');
+    if (log_td || log_einf) {
         static FILE* s_can_build_log = NULL;
         static int s_log_count = 0;
-        if (s_log_count < 200) {
+        if (s_log_count < 400) {
             if (s_can_build_log == NULL) {
                 char path[512];
                 const char* profile = getenv("USERPROFILE");
@@ -869,10 +877,10 @@ bool HouseClass::Can_Build(ObjectTypeClass const* type, HousesType house) const
                 }
                 int own_ok = ((1L << house) & own) != 0;
                 fprintf(s_can_build_log,
-                        "Can_Build name=%s house=%d level=%d type.Level=%d "
+                        "Can_Build rtti=%d name=%s house=%d level=%d type.Level=%d "
                         "pre=[%d,%d,%d,%d] own=0x%X level_ok=%d pre_ok=%d "
                         "own_ok=%d IsHuman=%d\n",
-                        type->IniName, (int)house, level,
+                        (int)type->What_Am_I(), type->IniName, (int)house, level,
                         ((TechnoTypeClass const*)type)->Level,
                         pre[0], pre[1], pre[2], pre[3],
                         own, level_ok, pre_ok, own_ok, (int)IsHuman);

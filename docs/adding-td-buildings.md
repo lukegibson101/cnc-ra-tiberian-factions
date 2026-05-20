@@ -88,6 +88,86 @@ For the interim (until we have TD-themed GDI/Nod infantry & vehicles), our mod's
 
 When introducing TD-specific infantry/units, revert the per-entry Owner expansion for those slots (remove `GoodGuy`/`BadGuy` from vanilla units that are being replaced by TD equivalents, so GDI/Nod only sees their own roster).
 
+### 10. aftrmath.ini overrides rules.ini — patch both
+
+`CCDATA/` ships two INI files: `rules.ini` and `aftrmath.ini` (Aftermath expansion overrides). The engine reads aftrmath.ini *after* rules.ini, so any entry present in aftrmath.ini wins — every field, including `Owner=`.
+
+Symptom from the 2026-05-20 session: E3 (Rocket Soldier) wasn't buildable for GDI even though rules.ini's `[E3]` had `Owner=allies,soviet,GoodGuy,BadGuy`. The diagnostic showed E3's effective `Ownable=0xFF` (= `HOUSEF_ALLIES|HOUSEF_SOVIET`, no GDI/Nod bits) post-parse. Cause: aftrmath.ini's `[E3]` had `Owner=allies` and overwrote the rules.ini value.
+
+When applying the Owner= bulk-patch (gotcha #9), apply the same rule to aftrmath.ini's units/infantry sections too. Same building exclusion list (FACF / WEAF / DOMF are decoy buildings; leave them untouched). See aftrmath.ini sections: STNK/CARR/CTNK/TTNK/DTRK/QTNK/MSUB/SHOK/MECH/LST/4TNK/4 (vehicles+vessels), E3/DOG (infantry), C2-C9/MISS/GNRL/CHAN/DELPHI (civilians).
+
+Same trap will catch any future field-level override (TechLevel, Prerequisite, Cost, Strength, etc.). When adding a new vanilla-overrides patch, search both INIs for the section header.
+
+### 11. RA armor strings ≠ TD armor enum names
+
+RA's `ArmorName[]` (`const.cpp:138`) maps armor strings to enum values with only `none`, `wood`, `light`, `heavy`, `concrete`. TD source code refers to the same protection tiers as `ARMOR_ALUMINUM` / `ARMOR_STEEL` — material names. The C++ `enum` values (`ARMOR_ALUMINUM`, `ARMOR_STEEL`) exist in RA too (`defines.h:2769-2770`), they just map to different string spellings.
+
+If a manifest uses `armor: "aluminum"` or `"steel"`, `CCINIClass::Get_ArmorType` → `Armor_From_Name` silently falls through to `ARMOR_NONE` — buildings take SA+HE bonus damage as if unarmored. Found 2026-05-20 by comparing against Reilsss's CnCinRA mod, which uses RA spellings.
+
+Fix lives in `redalert/weapon.cpp:Armor_From_Name`: it now accepts `"aluminum"`/`"steel"` as aliases for `ARMOR_ALUMINUM`/`ARMOR_STEEL` so the manifest can read TD-naturally.
+
+### 12. WEAP+WEAP2 two-layer compositing for Logic=WEAP
+
+`BuildingClass::Draw_It` (`building.cpp:509`) hardcodes a second-layer draw for every building of `Type == STRUCT_WEAP`, passing the literal asset name `"WEAP2"` to `Techno_Draw_Object_Virtual`. RA's Allied War Factory is two-piece art: `WEAP.ZIP` is the foundation ramp, `WEAP2.ZIP` is the walls/roof + door-opening animation.
+
+For `Logic=WEAP` mod entries, the donor's Type=STRUCT_WEAP triggers this overlay path even though our TD-sourced WEAP sprite is a single piece. Result: TD foundation rendered with vanilla RA walls/roof on top → hybrid building.
+
+Fix: TD-prefixed entries now redirect the overlay lookup to `"TDWEAP2"` (`building.cpp:Draw_It`), and we bundle TD's `WEAP2.ZIP` as `TDWEAP2.ZIP` via the asset pipeline. TD's WEAP2 has 20 frames (full open-close animation); the 4-stage door model in RA's engine needs an XML remap so shape 3 lands on TD frame 9 (fully open) rather than frame 3 (1/3 open) — gotcha #13.
+
+### 13. RA's 4-stage door model vs TD's 10-frame opening animation
+
+`DoorClass::Door_Stage` (`door.cpp:177`) returns 0..N-1 where N is the number of stages declared when the door was opened (`Open_Door(DOOR_RATE, DOOR_STAGES)` in `Mission_Unload` — RA uses `DOOR_STAGES = 5`, so shape numbers 0..4 in normal state, +4 for damaged). TD's WEAP2 source has 20 frames: 0..9 is the normal opening sequence (closed → fully open), 10..19 is the damaged-state sequence.
+
+If the XML tileset for `TDWEAP2` maps shape 0..3 to TD frames 0..3, the door only animates to 1/3 open before stopping. `bundle_assets.py` doesn't know about door stages — the remap has to be applied manually in `RA_STRUCTURES.XML`:
+
+```
+shape 0 → tdweap2-0000.tga (closed)
+shape 1 → tdweap2-0003.tga (1/3 open)
+shape 2 → tdweap2-0006.tga (2/3 open)
+shape 3 → tdweap2-0009.tga (fully open)
+shape 4 → tdweap2-0010.tga (damaged closed)
+shape 5 → tdweap2-0013.tga
+shape 6 → tdweap2-0016.tga
+shape 7 → tdweap2-0019.tga (damaged open)
+```
+
+### 14. Vanilla RA's `Track13` is `#if (1)`-overridden to pure-south
+
+`redalert/drive.cpp:1930` has two `Track13[]` definitions:
+
+```cpp
+#if (1)
+DriveClass::TrackType const DriveClass::Track13[] = {
+    {XYP_COORD(0, -35), DIR_S}, ...  // pure-south version, ACTIVE
+};
+#else
+DriveClass::TrackType const DriveClass::Track13[] = {
+    {XYP_COORD(10, -21), (DirType)(DIR_SW - 10)}, ...  // SW version, dead code
+};
+#endif
+```
+
+The active pure-south Track13 contradicts `TrackControl[66]`'s declared `DIR_SW` final facing — vanilla RA WEAP exits south but `Mission_Unload` then sets the unit's final facing to SW. The SW Track13 in the `#else` block is what TrackControl was designed for (and what TD's source uses). Took the per-tick `Coord` log (`tf_weap_track.log` diagnostic in `drive.cpp:While_Moving`) to spot — the math kept saying "no snap should happen" because I was reading the dead SW version while the engine ran the south one.
+
+Final fix: keep RA's pure-south Track13 active (vanilla Allied AI exit unchanged), ADD a new Track14 = SW variant (replicates the old `#else` block), add new `TrackControl[67]` and `OUT_OF_WEAPON_FACTORY_TD` enum. Vanilla WEAP (vanilla Allied players, AI) uses Track13 south as RA shipped; our TD `Logic=WEAP` entries call `Force_Track(OUT_OF_WEAPON_FACTORY_TD)` from `BuildingClass::Mission_Unload` and get TD-authentic SW motion.
+
+### 15. WEAP `Exit_Object` flow has its own STRUCT_WEAP case — separate from default
+
+`BuildingClass::Exit_Object` (`building.cpp:2050`) has switch cases for vehicle factories. STRUCT_WEAP at `building.cpp:2146` is a SPECIFIC case that:
+
+- Unlimbo's the vehicle at `Exit_Coord()` with hardcoded `DIR_S` (vanilla — we now gate to `DIR_SW` for TD-prefixed entries)
+- Sets `IsTethered=true` on the vehicle via `RADIO_TETHER`
+- Puts the BUILDING on `MISSION_UNLOAD` (not the vehicle)
+
+The actual door-open + vehicle-drive-out logic runs in `BuildingClass::Mission_Unload` (`building.cpp:5009`), which:
+
+1. Opens the door over `DOOR_STAGES * DOOR_RATE` ticks
+2. Once `Is_Door_Open()`, calls `unit->Force_Track(OUT_OF_WEAPON_FACTORY, coord)` — this picks Track13 via `TrackControl[66]`
+
+For TD entries we override the `coord` (Track13 destination) to `Adjacent_Cell(Center_Coord(), FACING_SW)`. Combined with SW Track13 (gotcha #14), `Track13[0]` lands at exactly the Unlimbo spawn position — zero snap. We also call `Assign_Destination(::As_Target(cell))` after Force_Track so the unit continues path-finding after Track13 ends (Track13 alone ends inside the building's SW corner cell).
+
+If you add another vehicle-producing TD building (e.g., TDAFLD for Nod), expect to extend the STRUCT_WEAP case and Mission_Unload accordingly, or model the new behaviour after this case.
+
 ---
 
 ## What "adding" means here

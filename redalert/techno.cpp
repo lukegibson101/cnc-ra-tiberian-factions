@@ -6783,6 +6783,22 @@ bool TechnoClass::Evaluate_Object(ThreatType method,
             return time;
         }
 
+        /*
+        **  TEMPORARY DEV HACK — collapse build time to ~1 second for GDI / Nod
+        **  players so we can iterate through full base layouts in seconds
+        **  during D1.2 catalogue testing. Mirrors the reveal-all hack in
+        **  scenario.cpp — same on/off convention (flip #if 1 to #if 0 to
+        **  disable). Vanilla houses keep their full TD-authentic / RA build
+        **  times so AI cadence isn't broken. Search for "TEMPORARY DEV HACK
+        **  — instant build" to remove. 15 ticks ≈ 1 second at 15 ticks/sec.
+        */
+#if 1
+        if (hptr->Class->House == HOUSE_GOOD || hptr->Class->House == HOUSE_BAD
+            || hptr->ActLike      == HOUSE_GOOD || hptr->ActLike      == HOUSE_BAD) {
+            return 15;
+        }
+#endif
+
 #ifdef FIXIT_VERSION_3
         if (Session.Type == GAME_NORMAL) {
 #else

@@ -560,6 +560,23 @@ bool Read_Scenario(char* name)
         return (false);
     }
     ScenarioInit--;
+
+    /*
+    **  TEMPORARY DEV HACK — reveal the full map to the player at scenario
+    **  start so we can observe AI behaviour during D1.2 testing. Mirrors the
+    **  TACTION_REVEAL_ALL trigger action in taction.cpp. Skirmish only (not
+    **  campaign) so single-player mission flow stays intact. Remove once
+    **  Phase 1 validation is signed off.
+    */
+#if 1
+    if (Session.Type != GAME_NORMAL && PlayerPtr != NULL && !PlayerPtr->IsVisionary) {
+        PlayerPtr->IsVisionary = true;
+        for (CELL cell = 0; cell < MAP_CELL_TOTAL; cell++) {
+            Map.Map_Cell(cell, PlayerPtr);
+        }
+    }
+#endif
+
     BEnd(BENCH_SCENARIO);
     return (true);
 }

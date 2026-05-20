@@ -26,6 +26,14 @@ so disabling is a one-line flip; deletion is also fine.
   `tf_mod_one_time.log`, `tf_can_build.log`, etc.). Each is per-IniName rate-
   limited. Same retention policy as Can_Build above.
 
+- **Instant build for GDI / Nod** — `redalert/techno.cpp` in
+  `TechnoTypeClass::Time_To_Build`. Forces 15 ticks (~1 s) return for any
+  build queued by `HOUSE_GOOD` / `HOUSE_BAD` (France→GDI / USSR→Nod players
+  via the launcher swap). Vanilla houses keep their full Cost-derived build
+  times so AI cadence is unaffected. Added 2026-05-20 for catalogue rollout
+  testing. Search for `TEMPORARY DEV HACK — instant build` to remove; flip
+  `#if 1` to `#if 0` to disable without deleting.
+
 ## Session pickup
 
 ### End of 2026-05-20 — Pipeline rebuild + 3 buildings + GDI playable
@@ -72,12 +80,30 @@ Other:
 
 ### Next session — pick up here
 
-**Unresolved from this session:**
+**This session (2026-05-20, post-pipeline-rebuild) wins:**
 
-1. **E3 (Rocket Soldier) still not buildable for GDI** despite `Owner=allies,soviet,GoodGuy,BadGuy` and explicit `Prerequisite=tent` in rules.ini, and a TDPYLE built (which has Type=STRUCT_TENT via Logic=TENT). Hypotheses to investigate:
-   - Vanilla `idata.cpp` E3 constructor might set Ownable to HOUSEF_ALLIES at class init, before rules.ini override. Maybe the override path differs for InfantryType vs BuildingType.
-   - Some other engine-level side check (Side=GDI vs Allied?).
-   - Add a Can_Build-style diagnostic for InfantryType to capture pre/own/level decision per frame; see if E3 even gets evaluated.
+- **E3 (Rocket Soldier) now buildable for GDI.** Root cause was `aftrmath.ini` overriding rules.ini's `Owner=allies,soviet,GoodGuy,BadGuy` with its own `Owner=allies` (Aftermath expansion INI loads after rules.ini and wins per-key). Diagnostic (`MOD_DEBUG_CANBUILD.txt`) showed E3's effective `Ownable=0xFF` = `HOUSEF_ALLIES|HOUSEF_SOVIET` only. Fix: bulk-patched aftrmath.ini's 23 non-building Owner= lines following rules.ini convention. New gotcha #10 in `docs/adding-td-buildings.md`.
+
+- **Manifest schema extended**: `sensors` (bool) and `storage` (int) fields added to FIELD_SPEC. Documented in manifest.
+
+- **Full GDI building roster shipped** (12 entries total — 8 new this session): TDPROC, TDSILO, TDFIX, TDWEAP, TDHPAD, TDGTWR, TDATWR, TDEYE on top of TDNUKE/TDNUK2/TDPYLE/TDHQ. All build, all render with TD-authentic sprites, all functional on the Deck.
+
+- **TDWEAP exit deep-dive.** What looked like a simple Logic=WEAP entry turned into 5+ engine-level fixes (8 hours of investigation, six rebuilds). Documented as gotchas #11-15:
+  - **#11**: Armor parser strings — RA uses `light`/`heavy`, TD uses `aluminum`/`steel`. Manifest "aluminum"/"steel" was silently falling to `ARMOR_NONE`. Fixed in `Armor_From_Name` with aliases.
+  - **#12**: `WEAP2` two-layer compositing — `BuildingClass::Draw_It` hardcodes a second-layer draw of `"WEAP2"` for any STRUCT_WEAP. Our TD WEAP sprite is single-piece so vanilla RA's yellow roof was rendering over TD's foundation. Fix: TD entries redirect overlay to `"TDWEAP2"`; TDWEAP2.ZIP bundled from TD source.
+  - **#13**: Door-stage XML remap — RA uses 4 door stages, TD's WEAP2 has 20 frames (10 normal + 10 damaged). Tileset shapes 0-3 must map to TD frames 0,3,6,9 so the door fully opens.
+  - **#14**: **The smoking gun** — `redalert/drive.cpp:1930` has TWO `Track13[]` definitions under `#if (1) / #else`. The pure-south version is active despite `TrackControl[66]` declaring `DIR_SW` final facing. The SW Track13 in the `#else` block is dead code that matches TD's authentic SW exit. Initially flipped to `#if (0)` — caused vanilla Allied WEAP to also use SW (which is not what RA shipped). Final fix: kept Track13 as RA's pure-south, ADDED Track14 (= old #else SW version), added `OUT_OF_WEAPON_FACTORY_TD = 67` enum, added `TrackControl[67] = {14, 14, DIR_SW, F_}`. Vanilla Allied AI WEAP exit is now bit-identical to RA original; TD entries get TD-authentic SW exit. Eight hours of "but the math says zero snap" because we kept reading the SW version while the engine ran the south one. Per-tick `Coord` diagnostic in `drive.cpp:While_Moving` finally caught it.
+  - **#15**: `Exit_Object` STRUCT_WEAP case + `Mission_Unload` interaction. Documented the door-open → Force_Track(SW Track13) → continued Assign_Destination chain. TD entries get TD-authentic SW exit; vanilla WEAP kept south-exit behaviour for Allied AI compatibility.
+
+- **1-second-build dev hack** for HOUSE_GOOD/HOUSE_BAD players. `TechnoTypeClass::Time_To_Build` returns 15 ticks for testing iteration. Documented in TEMPORARY DEV HACKS section.
+
+- **`scenario.cpp` reveal-all dev hack** preserved from earlier session (`#if 1`).
+
+**Diagnostics added this session and kept active per [[feedback-keep-diagnostics-until-v1]]:**
+- `MOD_DEBUG_CANBUILD.txt` extended with E*-prefix infantry tracking
+- `tf_exit_object.log` (Exit_Object default-case capture)
+- `tf_weap_unlimbo.log` (TDWEAP Mission_Unload Force_Track capture)
+- `tf_weap_track.log` (per-tick Coord during Track13 — voluminous; consider disabling under `#if 0` if log volume becomes a problem)
 
 **Immediate next work — finish GDI building roster:**
 
@@ -96,6 +122,17 @@ Remaining catalogue entries per the master flag table:
 - `storage` (int) — for TDPROC, TDSILO
 
 Both are simple FIELD_SPEC additions in `scripts/add_building.py`. Per `docs/manifest-gaps.md`.
+
+**TDAFLD (Nod airstrip) engine work — learning from TDWEAP:**
+
+The TDWEAP investigation (gotchas #11-15) established a template for any vehicle-producing TD building. TDAFLD will need its own version:
+
+- Separate `Track15` (or whatever the next slot is) for the airstrip cargo-plane delivery animation, with its own `TrackControl` entry and `OUT_OF_AIRSTRIP_TD` enum. Vanilla doesn't have an `OUT_OF_AIRSTRIP` track — vehicles spawn on the airstrip tile directly in RA. TD's airstrip animates a cargo plane landing → unloading → leaving.
+- Its own STRUCT_WEAP-like case in `BuildingClass::Exit_Object` (or extend the existing case to also fire for TDAFLD).
+- Its own door-stage XML remap if the airstrip-open animation has different frame ranges than RA's.
+- Possibly a custom Unlimbo direction for the cargo plane drop.
+
+Reilsss's CnCinRA mod gave up on this and reused the GDI weapons factory for Nod — we can do better with the split-track pattern we've now proven works. Plan: when we get to Nod, replicate the TDWEAP split (Track14/Track15 + enum + Mission_Unload branch) for the airstrip.
 
 **Then Nod buildings:**
 - TDHAND (Logic=BARR — Soviet barracks), TDGUN, TDSAM, TDOBLI, TDTMPL. Bib note for TDHAND: per catalogue table it's `2×3 footprint`, needs its own `_presets[]` entry in `bdata.cpp`.

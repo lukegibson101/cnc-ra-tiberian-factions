@@ -68,10 +68,12 @@ FIELD_SPEC = [
     # economy
     ("cost",        "Cost",         _str),
     ("power",       "Power",        _str),
+    ("storage",     "Storage",      _str),
     ("points",      "Points",       _str),
     # tactical
     ("sight",       "Sight",        _str),
     ("adjacent",    "Adjacent",     _str),
+    ("sensors",     "Sensors",      _yes_no),
     # defence
     ("strength",    "Strength",     _str),
     ("armor",       "Armor",        _identity),

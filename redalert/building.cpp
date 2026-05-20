@@ -505,14 +505,27 @@ void BuildingClass::Draw_It(int x, int y, WindowNumberType window) const
 
         /*
         **	Draw the weapon factory custom overlay graphic.
+        **
+        **	TD's GDI Weapons Factory is rendered as foundation + door-animated
+        **	roof, same two-layer scheme as RA's Allied War Factory. WEAP.ZIP is
+        **	just the bottom ramp; WEAP2.ZIP is the walls/roof with door-opening
+        **	frames. For our mod-defined TD-prefixed entries, redirect the
+        **	launcher's overlay lookup from vanilla "WEAP2" to "TDWEAP2" so it
+        **	finds our TD-source overlay (bundled via scripts/bundle_assets.py)
+        **	instead of compositing the RA Allied roof onto TD's foundation.
+        **	Vanilla WEAP / FAKEWEAP keep the original "WEAP2" string.
         */
         if ((*this == STRUCT_WEAP || *this == STRUCT_FAKEWEAP)) {
             int shapenum = Door_Stage();
             if (Health_Ratio() <= Rule.ConditionYellow)
                 shapenum += 4;
+            char const* overlay_asset = "WEAP2";
+            if (Class->IniName[0] == 'T' && Class->IniName[1] == 'D') {
+                overlay_asset = "TDWEAP2";
+            }
             // Added override shape file name. ST - 8/1/2019 5:24PM
             // Techno_Draw_Object(Class->WarFactoryOverlay, shapenum, x, y, window);
-            Techno_Draw_Object_Virtual(Class->WarFactoryOverlay, shapenum, x, y, window, DIR_N, 0x0100, "WEAP2");
+            Techno_Draw_Object_Virtual(Class->WarFactoryOverlay, shapenum, x, y, window, DIR_N, 0x0100, overlay_asset);
         }
 
         /*
@@ -2148,7 +2161,14 @@ int BuildingClass::Exit_Object(TechnoClass* base)
                 return (1); // fail while we're still unloading previous
             }
             ScenarioInit++;
-            if (base->Unlimbo(Exit_Coord(), DIR_S)) {
+            // TD source uses DIR_SW here (tiberiandawn/building.cpp:2273), not
+            // DIR_S. Gated on TD-prefixed IniName so vanilla RA Allied War
+            // Factory keeps its original south-facing exit; mod entries get
+            // TD-authentic SW facing. Spawn position stays at TD-authentic
+            // Exit_Coord() — the visible shift was a track-side problem, not
+            // a spawn-position problem.
+            if (base->Unlimbo(Exit_Coord(),
+                              (Class->IniName[0] == 'T' && Class->IniName[1] == 'D') ? DIR_SW : DIR_S)) {
                 base->Mark(MARK_UP);
                 base->Coord = Exit_Coord();
                 base->Mark(MARK_DOWN);
@@ -2205,8 +2225,56 @@ int BuildingClass::Exit_Object(TechnoClass* base)
                 DirType dir = Direction(cell);
                 COORDINATE start = Exit_Coord();
 
+                // Diagnostic 2026-05-20: capture vehicle-exit data for TD-mod
+                // buildings (TD-prefixed IniName) so we can see why TDWEAP's
+                // tank teleports + faces wrong direction. Logs: building cell,
+                // spawn pixel (start), exit cell, dir, plus the unit's actual
+                // Coord + PrimaryFacing immediately after Unlimbo. See
+                // catalogue.md "TEMPORARY DEV HACKS".
+                static FILE* s_exit_log = NULL;
+                bool log_this = (Class->IniName[0] == 'T' && Class->IniName[1] == 'D');
+                if (log_this) {
+                    if (s_exit_log == NULL) {
+                        char dpath[512];
+                        const char* dprof = getenv("USERPROFILE");
+                        if (dprof != NULL && dprof[0] != '\0') {
+                            snprintf(dpath, sizeof(dpath),
+                                     "%s/Documents/CnCRemastered/tf_exit_object.log", dprof);
+                        } else {
+                            strcpy(dpath, "tf_exit_object.log");
+                        }
+                        s_exit_log = fopen(dpath, "w");
+                    }
+                    if (s_exit_log != NULL) {
+                        CELL b_origin = Coord_Cell(Coord);
+                        CELL spawn_cell = Coord_Cell(start);
+                        fprintf(s_exit_log,
+                                "EXIT %s b_origin=cell(%d,%d) spawn_pixel=(%d,%d) "
+                                "spawn_cell=cell(%d,%d) exit_cell=cell(%d,%d) "
+                                "exit_rel=(%d,%d) dir=%d\n",
+                                Class->IniName,
+                                Cell_X(b_origin), Cell_Y(b_origin),
+                                Coord_X(start), Coord_Y(start),
+                                Cell_X(spawn_cell), Cell_Y(spawn_cell),
+                                Cell_X(cell), Cell_Y(cell),
+                                Cell_X(cell) - Cell_X(b_origin),
+                                Cell_Y(cell) - Cell_Y(b_origin),
+                                (int)dir);
+                        fflush(s_exit_log);
+                    }
+                }
+
                 ScenarioInit++;
                 if (base->Unlimbo(start, dir)) {
+
+                    if (log_this && s_exit_log != NULL && base->Is_Techno()) {
+                        TechnoClass* t = (TechnoClass*)base;
+                        fprintf(s_exit_log,
+                                "  POST_UNLIMBO base.Coord=(%d,%d) base.PrimaryFacing=%d\n",
+                                Coord_X(t->Coord), Coord_Y(t->Coord),
+                                (int)t->PrimaryFacing.Current());
+                        fflush(s_exit_log);
+                    }
 
                     base->Assign_Mission(MISSION_MOVE);
 
@@ -2219,6 +2287,17 @@ int BuildingClass::Exit_Object(TechnoClass* base)
                         base->Assign_Mission(MISSION_GUARD_AREA);
                         base->ArchiveTarget = ::As_Target(House->Where_To_Go((FootClass*)base));
                     }
+
+                    if (log_this && s_exit_log != NULL && base->Is_Foot()) {
+                        FootClass* t = (FootClass*)base;
+                        fprintf(s_exit_log,
+                                "  POST_MISSION base.Coord=(%d,%d) base.PrimaryFacing=%d Mission=%d NavCom=0x%X\n",
+                                Coord_X(t->Coord), Coord_Y(t->Coord),
+                                (int)t->PrimaryFacing.Current(),
+                                (int)t->Mission, (unsigned)t->NavCom);
+                        fflush(s_exit_log);
+                    }
+
                     ScenarioInit--;
                     return (2);
                 }
@@ -5011,9 +5090,53 @@ int BuildingClass::Mission_Unload(void)
                         unit->Assign_Mission(MISSION_GUARD_AREA);
                         unit->ArchiveTarget = ::As_Target(House->Where_To_Go(unit));
                     }
-                    unit->Force_Track(DriveClass::OUT_OF_WEAPON_FACTORY, coord);
-                    //						unit->Force_Track(DriveClass::OUT_OF_WEAPON_FACTORY,
-                    //Adjacent_Cell(Adjacent_Cell(Center_Coord(), FACING_S), FACING_S));
+                    /*
+                    **  TD-prefixed mod entries (Logic=WEAP TD buildings):
+                    **  skip Track13 entirely and pathfind from spawn to the
+                    **  ExitList[0] cell via plain MISSION_MOVE. Track13's
+                    **  canned animation lands the vehicle inside the SW
+                    **  corner cell of the footprint, and the handoff to a
+                    **  follow-on Assign_Destination produced a visible
+                    **  teleport + a south-then-west route. The plain pathfind
+                    **  from the at-door spawn (Coord set by Unlimbo to
+                    **  Exit_Coord()) is smooth and goes SW directly.
+                    **
+                    **  Vanilla RA WEAP keeps the original Force_Track path so
+                    **  Allied AI behaviour is unchanged.
+                    */
+                    /*
+                    **  TD entries use Force_Track with destination =
+                    **  Adjacent_Cell(Center_Coord(), FACING_SW). The math:
+                    **  Track13[0].Offset = XYP_COORD(10, -21) px = (107, -224)
+                    **  leptons. For 3x3 building, Center_Coord SW = building
+                    **  origin + (128, 640) lep. Track13[0] position =
+                    **  destination + offset = (235, 416) lep — exactly the
+                    **  TD-authentic Exit_Coord (XYP_COORD(22, 39)). So the
+                    **  first track tick sets Coord to the same place the unit
+                    **  was Unlimbo'd — zero snap, smooth drive from spawn.
+                    **
+                    **  Track13 ends at Adjacent_Cell SW (cell (0,2) centre,
+                    **  inside the building's SW corner). After it, an
+                    **  Assign_Destination to ExitList[0] continues path-find
+                    **  fully out. The transition between Track13 end and
+                    **  Track2 start is ~1 lepton snap (imperceptible).
+                    **
+                    **  Vanilla WEAP keeps the original logic for Allied AI.
+                    */
+                    if (Class->IniName[0] == 'T' && Class->IniName[1] == 'D') {
+                        // TD entries: drive Track14 (SW) toward Adjacent_Cell SW
+                        // of building centre. The math: Track14[0] offset
+                        // (10, -21 px) + that destination = the Unlimbo spawn
+                        // exactly, so the first track tick produces zero snap.
+                        // Vanilla WEAP uses the original south Track13 via
+                        // OUT_OF_WEAPON_FACTORY (next branch) — Allied AI exit
+                        // behaviour is unchanged.
+                        COORDINATE td_dest = Adjacent_Cell(Center_Coord(), FACING_SW);
+                        unit->Force_Track(DriveClass::OUT_OF_WEAPON_FACTORY_TD, td_dest);
+                        unit->Assign_Destination(::As_Target(cell));
+                    } else {
+                        unit->Force_Track(DriveClass::OUT_OF_WEAPON_FACTORY, coord);
+                    }
                     unit->Set_Speed(128);
                     Status = LEAVE;
                 } else {

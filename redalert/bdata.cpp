@@ -3870,6 +3870,29 @@ bool BuildingTypeClass::Read_INI(CCINIClass& ini)
         // over visual impression when sizing entries; the bib is decorative.
         static short const List_PYLE_OCCUPY[]  = {0, 1, REFRESH_EOL};
         static short const List_PYLE_OVERLAP[] = {MAP_CELL_W, MAP_CELL_W + 1, REFRESH_EOL};
+        // WEAP (TD GDI Weapons Factory) — 3×3 footprint, mirroring TD's
+        // ListWeap/OListWeap in tiberiandawn/bdata.cpp:74,103. Bottom 6 cells
+        // (rows 1+2) are the physical foundation; top row (row 0) is overlap
+        // only (visual roof/walls extending up). RA's WEAP donor is 3×2 with
+        // all cells fully occupied — Logic=WEAP alone inherits that, but the
+        // TD sprite's vertical extent is 3 cells, so the foundation overflows
+        // below the cells. Override with this preset gives TD-authentic shape.
+        static short const List_WEAP_OCCUPY[]  = {
+            (MAP_CELL_W * 1), (MAP_CELL_W * 1) + 1, (MAP_CELL_W * 1) + 2,
+            (MAP_CELL_W * 2), (MAP_CELL_W * 2) + 1, (MAP_CELL_W * 2) + 2,
+            REFRESH_EOL
+        };
+        static short const List_WEAP_OVERLAP[] = {0, 1, 2, REFRESH_EOL};
+        // WEAP exit cells — copied verbatim from tiberiandawn/bdata.cpp:89
+        // (TD's ExitWeap array). Order matters: first slot is the preferred
+        // exit cell. The commented-out cells in the TD source (row 0
+        // entries) are not included here either — TD shipped without them
+        // and so do we.
+        static short const Exit_WEAP[] = {
+            XYCELL(-1, 3), XYCELL(0, 3), XYCELL(-1, 2), XYCELL(1, 3),
+            XYCELL(-1, 1), XYCELL(3, 1),
+            REFRESH_EOL
+        };
 
         struct FootprintPreset
         {
@@ -3877,13 +3900,26 @@ bool BuildingTypeClass::Read_INI(CCINIClass& ini)
             BSizeType   size;
             short const* occupy;
             short const* overlap;
+            short const* exit_list;   // NULL = keep donor's (Logic= alias copy)
+            COORDINATE   exit_coord;  // 0 = keep donor's
         };
         static FootprintPreset const _presets[] = {
             // TD building footprints — copied from tiberiandawn/bdata.cpp.
             // Add new entries as we expand the GDI/Nod catalogue.
-            {"NUKE", BSIZE_22, List_NUK2_OCCUPY, List_NUK2_OVERLAP},   // shares NUK2's 2x2 L-shape
-            {"NUK2", BSIZE_22, List_NUK2_OCCUPY, List_NUK2_OVERLAP},
-            {"PYLE", BSIZE_22, List_PYLE_OCCUPY, List_PYLE_OVERLAP},
+            {"NUKE", BSIZE_22, List_NUK2_OCCUPY, List_NUK2_OVERLAP, NULL, 0},   // shares NUK2's 2x2 L-shape
+            {"NUK2", BSIZE_22, List_NUK2_OCCUPY, List_NUK2_OVERLAP, NULL, 0},
+            {"PYLE", BSIZE_22, List_PYLE_OCCUPY, List_PYLE_OVERLAP, NULL, 0},
+            {"HQ",   BSIZE_22, List_NUK2_OCCUPY, List_NUK2_OVERLAP, NULL, 0},   // TD ComList/OComList = NUK2 L-shape
+            // WEAP: ExitCoordinate copied verbatim from TD's ClassWeapon
+            // constructor in tiberiandawn/bdata.cpp:266 — pixel (22, 39) in
+            // a 3×3 (72×72 px) building footprint, placing the spawn at the
+            // upper-left interior near the door. If RA's pathfinder ends up
+            // snapping this to the first ExitList cell instead of animating,
+            // the fix belongs in the engine's vehicle-exit code path, not in
+            // these data values.
+            {"WEAP", BSIZE_33, List_WEAP_OCCUPY, List_WEAP_OVERLAP, Exit_WEAP,
+             XYP_COORD(10 + (CELL_PIXEL_W / 2),
+                       ((CELL_PIXEL_H * 3) - (CELL_PIXEL_H / 2)) - 21)},
         };
 
         if (ini.Get_String(Name(), "Footprint", "", buffer, sizeof(buffer)) > 0) {
@@ -3892,6 +3928,12 @@ bool BuildingTypeClass::Read_INI(CCINIClass& ini)
                     Size        = _presets[i].size;
                     OccupyList  = _presets[i].occupy;
                     OverlapList = _presets[i].overlap;
+                    if (_presets[i].exit_list != NULL) {
+                        ExitList = _presets[i].exit_list;
+                    }
+                    if (_presets[i].exit_coord != 0) {
+                        ExitCoordinate = _presets[i].exit_coord;
+                    }
                     break;
                 }
             }

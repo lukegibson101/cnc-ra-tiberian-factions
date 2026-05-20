@@ -1372,11 +1372,83 @@
 		</CNCEncyclopediaComponent>
 	</ObjectTypeClass>
 
+	<ObjectTypeClass Name="RA_TDPROC" Classification="CNCBuildableObject" CanInstantiate="False">
+		<CNCEncyclopediaComponent>
+			<ObjectNameTextID>TEXT_STRUCTURE_TITLE_GDI_REFINERY</ObjectNameTextID>
+			<ObjectDescriptionTextID>TEXT_STRUCTURE_DESC_GDI_REFINERY</ObjectDescriptionTextID>
+			<BuildIcon>BuildIcon_TD_Refinery</BuildIcon>
+		</CNCEncyclopediaComponent>
+	</ObjectTypeClass>
+
+	<ObjectTypeClass Name="RA_TDSILO" Classification="CNCBuildableObject" CanInstantiate="False">
+		<CNCEncyclopediaComponent>
+			<ObjectNameTextID>TEXT_STRUCTURE_TITLE_GDI_SILO</ObjectNameTextID>
+			<ObjectDescriptionTextID>TEXT_STRUCTURE_DESC_GDI_SILO</ObjectDescriptionTextID>
+			<BuildIcon>BuildIcon_TD_Silo</BuildIcon>
+		</CNCEncyclopediaComponent>
+	</ObjectTypeClass>
+
 	<ObjectTypeClass Name="RA_TDPYLE" Classification="CNCBuildableObject" CanInstantiate="False">
 		<CNCEncyclopediaComponent>
 			<ObjectNameTextID>TEXT_STRUCTURE_TITLE_GDI_BARRACKS</ObjectNameTextID>
 			<ObjectDescriptionTextID>TEXT_STRUCTURE_DESC_GDI_BARRACKS</ObjectDescriptionTextID>
 			<BuildIcon>BuildIcon_TD_Barracks</BuildIcon>
+		</CNCEncyclopediaComponent>
+	</ObjectTypeClass>
+
+	<ObjectTypeClass Name="RA_TDHQ" Classification="CNCBuildableObject" CanInstantiate="False">
+		<CNCEncyclopediaComponent>
+			<ObjectNameTextID>TEXT_STRUCTURE_TITLE_GDI_COMM_CENTER</ObjectNameTextID>
+			<ObjectDescriptionTextID>TEXT_STRUCTURE_DESC_GDI_COMM_CENTER</ObjectDescriptionTextID>
+			<BuildIcon>BuildIcon_TD_CommCenter</BuildIcon>
+		</CNCEncyclopediaComponent>
+	</ObjectTypeClass>
+
+	<ObjectTypeClass Name="RA_TDFIX" Classification="CNCBuildableObject" CanInstantiate="False">
+		<CNCEncyclopediaComponent>
+			<ObjectNameTextID>TEXT_STRUCTURE_TITLE_GDI_REPAIR_FACILITY</ObjectNameTextID>
+			<ObjectDescriptionTextID>TEXT_STRUCTURE_DESC_GDI_REPAIR_FACILITY</ObjectDescriptionTextID>
+			<BuildIcon>BuildIcon_TD_RepairFacility</BuildIcon>
+		</CNCEncyclopediaComponent>
+	</ObjectTypeClass>
+
+	<ObjectTypeClass Name="RA_TDWEAP" Classification="CNCBuildableObject" CanInstantiate="False">
+		<CNCEncyclopediaComponent>
+			<ObjectNameTextID>TEXT_STRUCTURE_TITLE_GDI_WEAPONS_FACTORY</ObjectNameTextID>
+			<ObjectDescriptionTextID>TEXT_STRUCTURE_DESC_GDI_WEAPONS_FACTORY</ObjectDescriptionTextID>
+			<BuildIcon>BuildIcon_TD_WeaponsFactory</BuildIcon>
+		</CNCEncyclopediaComponent>
+	</ObjectTypeClass>
+
+	<ObjectTypeClass Name="RA_TDHPAD" Classification="CNCBuildableObject" CanInstantiate="False">
+		<CNCEncyclopediaComponent>
+			<ObjectNameTextID>TEXT_STRUCTURE_TITLE_GDI_HELIPAD</ObjectNameTextID>
+			<ObjectDescriptionTextID>TEXT_STRUCTURE_DESC_GDI_HELIPAD</ObjectDescriptionTextID>
+			<BuildIcon>BuildIcon_TD_Helipad</BuildIcon>
+		</CNCEncyclopediaComponent>
+	</ObjectTypeClass>
+
+	<ObjectTypeClass Name="RA_TDGTWR" Classification="CNCBuildableObject" CanInstantiate="False">
+		<CNCEncyclopediaComponent>
+			<ObjectNameTextID>TEXT_STRUCTURE_TITLE_GDI_GUARD_TOWER</ObjectNameTextID>
+			<ObjectDescriptionTextID>TEXT_STRUCTURE_DESC_GDI_GUARD_TOWER</ObjectDescriptionTextID>
+			<BuildIcon>BuildIcon_TD_GuardTower</BuildIcon>
+		</CNCEncyclopediaComponent>
+	</ObjectTypeClass>
+
+	<ObjectTypeClass Name="RA_TDATWR" Classification="CNCBuildableObject" CanInstantiate="False">
+		<CNCEncyclopediaComponent>
+			<ObjectNameTextID>TEXT_STRUCTURE_TITLE_GDI_ADV_GUARD_TOWER</ObjectNameTextID>
+			<ObjectDescriptionTextID>TEXT_STRUCTURE_DESC_GDI_ADV_GUARD_TOWER</ObjectDescriptionTextID>
+			<BuildIcon>BuildIcon_TD_AdvGuardTower</BuildIcon>
+		</CNCEncyclopediaComponent>
+	</ObjectTypeClass>
+
+	<ObjectTypeClass Name="RA_TDEYE" Classification="CNCBuildableObject" CanInstantiate="False">
+		<CNCEncyclopediaComponent>
+			<ObjectNameTextID>TEXT_STRUCTURE_TITLE_GDI_ADV_COMM_CENTER</ObjectNameTextID>
+			<ObjectDescriptionTextID>TEXT_STRUCTURE_DESC_GDI_ADV_COMM_CENTER</ObjectDescriptionTextID>
+			<BuildIcon>BuildIcon_TD_AdvCommCtr</BuildIcon>
 		</CNCEncyclopediaComponent>
 	</ObjectTypeClass>
 
