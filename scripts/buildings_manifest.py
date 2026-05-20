@@ -37,8 +37,11 @@ Field meanings and source:
   cost         - credits
   power        - signed: +N produces, -N consumes (engine converts -N to Drain=N)
   storage      - credit-storage capacity for refineries/silos. Integer; omit
-                 (None) for non-storage buildings. TD-authentic baseline:
-                 refinery 1000, silo 1500.
+                 (None) for non-storage buildings. RA-authentic baseline:
+                 refinery 2000, silo 1500. (Vanilla RA rules.ini ships with
+                 NightFalcon101's MODERATE_WARFARE 10× values; reverted in
+                 our copy. TD-authentic refinery is 1000 but we stay with
+                 RA values for parity with the rest of the mod's economy.)
   points       - TD-authentic RISK/RWRD value. MANDATORY or AI ignores the
                  building (see docs/ai-targeting.md).
   sight        - cell radius (TD-authentic; smaller than RA equivalents)
@@ -178,7 +181,7 @@ TDPROC = {
     "owner":       "GoodGuy,BadGuy",
     "cost":        2000,
     "power":       -40,
-    "storage":     1000,
+    "storage":     2000,
     "points":      55,
     "sight":       4,
     "adjacent":    1,
@@ -201,7 +204,11 @@ TDSILO = {
     "ininame":     "TDSILO",
     "logic":       "SILO",
     "td_asset":    "SILO",
-    "footprint":   None,  # RA SILO donor is 2x1 (BSIZE_21); inherit donor shape.
+    # RA SILO donor is BSIZE_11 (1×1) which made TDSILO render 1×1; override to
+    # TD-authentic BSIZE_21 via the SILO preset. Bib=yes adds the extra row
+    # visually so placement preview reads as 2 wide × 2 rows. shape_size
+    # 48×24 matches the TD silo sprite's native 2-wide × 1-tall canvas.
+    "footprint":   "SILO",
     "shape_size":  (48, 24),
     "text_id_name": "TEXT_STRUCTURE_TITLE_GDI_SILO",
     "text_id_desc": "TEXT_STRUCTURE_DESC_GDI_SILO",
@@ -396,7 +403,14 @@ TDATWR = {
     "sensors":     None,
     "strength":    300,
     "armor":       "aluminum",
-    "primary":     None,
+    # Dual-role interim: Hellfire (heat-seeking AP missile, RA Longbow's
+    # payload) for ground + inherited ZSU-23 AA from AGUN donor via Logic=
+    # alias. Hellfire closer to TD's TOW_TWO feel than the original TurretGun
+    # substitute — heat-seeking projectile gives a missile-tower visual that
+    # matches the TD ATWR silhouette better than a cannon. Engine dispatches
+    # per target type (ground→Hellfire, air→ZSU-23). Replace with the proper
+    # TOW_TWO port when Phase W1 lands (docs/weapon-ports.md).
+    "primary":     "Hellfire",
     "secondary":   None,
     "base_normal": True,
     "capturable":  False,
@@ -404,7 +418,7 @@ TDATWR = {
     "repairable":  True,
     "bib":         False,
     "idle_anim":   None,
-    "notes":       "TD GDI Advanced Guard Tower. Logic=AGUN (anti-air gun donor). TD-authentic is dual-role anti-armor + anti-air (TurretGun + Nike); v0.3 inherits donor AA weapon. Weapon split is in weapon-ports.md.",
+    "notes":       "TD GDI Advanced Guard Tower. Logic=AGUN (anti-air gun donor). TD-authentic is dual-role anti-armor + anti-air (TurretGun + Nike). Interim: Primary=TeslaZap (ground) + Secondary inherits AGUN's ZSU-23 (AA) via Logic= alias. Weapon port is in weapon-ports.md.",
 }
 
 
@@ -412,10 +426,10 @@ TDEYE = {
     "ininame":     "TDEYE",
     "logic":       "MSLO",
     "td_asset":    "EYE",
-    # RA MSLO donor is BSIZE_21 (2x1); TD is 2x2. Inherit donor for v0.3 —
-    # sprite at 2x2 will overhang the 2x1 footprint slightly. Authentic 2x2
-    # preset is a follow-up. Superweapon behaviour works regardless.
-    "footprint":   None,
+    # RA MSLO donor is BSIZE_21 (2x1); TD EYE is BSIZE_22 with the L-shape
+    # NUK2 pattern (occupy {0, MCW, MCW+1}, overlap {1}). EYE preset reuses
+    # NUK2's lists since tiberiandawn/bdata.cpp ComList/OComList are identical.
+    "footprint":   "EYE",
     "shape_size":  (48, 48),
     "text_id_name": "TEXT_STRUCTURE_TITLE_GDI_ADV_COMM_CENTER",
     "text_id_desc": "TEXT_STRUCTURE_DESC_GDI_ADV_COMM_CENTER",

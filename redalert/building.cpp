@@ -3056,9 +3056,16 @@ ActionType BuildingClass::What_Action(ObjectClass const* object) const
     /*
     **	Don't allow targeting of SAM sites, even if the CTRL key
     **	is held down. Also don't allow targeting if the object is too
-    **	far away.
+    **	far away. STRUCT_AAGUN-aliased entries (e.g. Logic=AGUN with
+    **	Primary=Hellfire) only get blocked here if their primary weapon
+    **	is itself anti-air-only — vanilla AGUN's ZSU-23 has
+    **	IsAntiGround=false so it's still excluded, but a mod tower with
+    **	an anti-ground primary can be force-fired at ground targets.
     */
-    if (action == ACTION_ATTACK && (*this == STRUCT_SAM || *this == STRUCT_AAGUN || !In_Range(object, 0))) {
+    bool aa_only_aagun = (*this == STRUCT_AAGUN && Class->PrimaryWeapon != NULL
+                          && Class->PrimaryWeapon->Bullet != NULL
+                          && !Class->PrimaryWeapon->Bullet->IsAntiGround);
+    if (action == ACTION_ATTACK && (*this == STRUCT_SAM || aa_only_aagun || !In_Range(object, 0))) {
         action = ACTION_NONE;
     }
 

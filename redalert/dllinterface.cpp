@@ -3507,17 +3507,24 @@ void DLLExportClass::DLL_Draw_Intercept(int shape_number,
             }
             if (s_draw_log != NULL) {
                 BuildingClass const* bld = (BuildingClass const*)object;
+                char const* pri_name = (btc->PrimaryWeapon != NULL && btc->PrimaryWeapon->Name() != NULL)
+                                           ? btc->PrimaryWeapon->Name() : "(null)";
+                char const* sec_name = (btc->SecondaryWeapon != NULL && btc->SecondaryWeapon->Name() != NULL)
+                                           ? btc->SecondaryWeapon->Name() : "(null)";
                 fprintf(s_draw_log,
                         "Draw IniName=%s GraphicName=%s shape_file_name=%s "
-                        "BState=%d StrengthRatio=%d shape#=%d w=%d h=%d "
-                        "ImageData=%p BuildupData=%p\n",
+                        "BState=%d HP=%d shape#=%d w=%d h=%d "
+                        "ImageData=%p BuildupData=%p Primary=%s Secondary=%s "
+                        "TurretEq=%d Armor=%d TarCom=%lx\n",
                         btc->IniName,
                         (btc->Graphic_Name() != NULL ? btc->Graphic_Name() : "(null)"),
                         (shape_file_name != NULL ? shape_file_name : "(null)"),
                         (int)bld->BState,
                         (int)bld->Strength,
                         shape_number, width, height,
-                        btc->Get_Image_Data(), btc->Get_Buildup_Data());
+                        btc->Get_Image_Data(), btc->Get_Buildup_Data(),
+                        pri_name, sec_name, (int)btc->IsTurretEquipped,
+                        (int)btc->Armor, (long)bld->TarCom);
                 fflush(s_draw_log);
             }
         }

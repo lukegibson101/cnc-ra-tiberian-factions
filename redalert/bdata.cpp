@@ -3434,6 +3434,33 @@ void BuildingTypeClass::Init(TheaterType theater)
                 }
             }
         }
+
+        /*
+        **  Logic=-aliased mod entries (heap slots past STRUCT_COUNT) inherit
+        **  their donor's ImageData/BuildupData at Read_INI time. For donors
+        **  that are theater-specific (e.g. MSLO → TDEYE), those pointers were
+        **  NULL at Read_INI because Init(theater) hadn't run yet. Now that the
+        **  donor has just been refreshed above, re-copy the pointers to any
+        **  mod entry whose Type matches a vanilla StructType — the Logic=
+        **  block sets Type = donor->Type, so this is the alias relationship.
+        */
+        for (int sindex = STRUCT_COUNT; sindex < BuildingTypes.Count(); sindex++) {
+            BuildingTypeClass const* modptr = &(*BuildingTypes.Ptr(sindex));
+            if (modptr->Type >= STRUCT_FIRST && modptr->Type < STRUCT_COUNT) {
+                BuildingTypeClass const* donor = &As_Reference(modptr->Type);
+                if (donor->IsTheater) {
+                    ((void const*&)modptr->ImageData)   = donor->ImageData;
+                    ((void const*&)modptr->BuildupData) = donor->BuildupData;
+                    // Donor's Anims[BSTATE_CONSTRUCTION] was {0,1,0} at the
+                    // Read_INI alias-copy time because Init_Anim only runs
+                    // here in Init(theater) for theater-specific donors. Now
+                    // that the donor's buildup count/rate is finalized, copy
+                    // it to the mod entry so the buildup animation plays the
+                    // full frame range instead of completing in one tick.
+                    modptr->Anims[BSTATE_CONSTRUCTION] = donor->Anims[BSTATE_CONSTRUCTION];
+                }
+            }
+        }
     }
 }
 
@@ -3846,6 +3873,28 @@ bool BuildingTypeClass::Read_INI(CCINIClass& ini)
                 // donor's pointer — Logic= aliases mean engine dispatch is
                 // donor-keyed anyway, so reusing the donor's image is correct.
                 ((void const*&)ImageData) = donor->ImageData;
+                // Weapon pointers — TechnoTypeClass::Read_INI runs before this
+                // block, so an explicit Primary=/Secondary= in the mod entry's
+                // INI section will already have populated these. Only fall
+                // back to the donor when the entry didn't specify, so a
+                // Logic=PBOX tower without an explicit Primary= still fires
+                // the pillbox's weapon.
+                if (PrimaryWeapon == NULL) {
+                    PrimaryWeapon = donor->PrimaryWeapon;
+                }
+                if (SecondaryWeapon == NULL) {
+                    SecondaryWeapon = donor->SecondaryWeapon;
+                }
+                // Do NOT copy IsTurretEquipped from the donor. AGUN/SAM/TURR
+                // donors render their turret as a separate facing-indexed SHP
+                // drawn on top of the base sprite (UnitClass::BodyShape lookup
+                // in Fetch_Stage). Our TD mod entries ship a combined sprite
+                // — flipping the turret flag on makes the engine try to find a
+                // 32-facing turret SHP that doesn't exist and the building
+                // renders as a broken single-cell strip. Without the flag,
+                // Turret_Facing falls back to direction-to-target (building.cpp:2677),
+                // so the weapon still fires and aims correctly; the visual just
+                // doesn't rotate. That matches TD's static-tower aesthetic.
             }
         }
 
@@ -3883,6 +3932,11 @@ bool BuildingTypeClass::Read_INI(CCINIClass& ini)
             REFRESH_EOL
         };
         static short const List_WEAP_OVERLAP[] = {0, 1, 2, REFRESH_EOL};
+        // SILO (TD Ore Silo) — TD-authentic BSIZE_21 (2 wide × 1 tall),
+        // both cells occupied, no overlap. Matches tiberiandawn/bdata.cpp:682
+        // ClassStorage + StoreList = {0, 1}. With Bib=yes the placement
+        // preview shows 2×2 (top row foundation, bottom row bib decoration).
+        static short const List_SILO_OCCUPY[] = {0, 1, REFRESH_EOL};
         // WEAP exit cells — copied verbatim from tiberiandawn/bdata.cpp:89
         // (TD's ExitWeap array). Order matters: first slot is the preferred
         // exit cell. The commented-out cells in the TD source (row 0
@@ -3908,7 +3962,9 @@ bool BuildingTypeClass::Read_INI(CCINIClass& ini)
             // Add new entries as we expand the GDI/Nod catalogue.
             {"NUKE", BSIZE_22, List_NUK2_OCCUPY, List_NUK2_OVERLAP, NULL, 0},   // shares NUK2's 2x2 L-shape
             {"NUK2", BSIZE_22, List_NUK2_OCCUPY, List_NUK2_OVERLAP, NULL, 0},
+            {"EYE",  BSIZE_22, List_NUK2_OCCUPY, List_NUK2_OVERLAP, NULL, 0},   // TD ComList/OComList = NUK2 L-shape
             {"PYLE", BSIZE_22, List_PYLE_OCCUPY, List_PYLE_OVERLAP, NULL, 0},
+            {"SILO", BSIZE_21, List_SILO_OCCUPY, NULL,              NULL, 0},   // 2x1 + bib (TD-authentic)
             {"HQ",   BSIZE_22, List_NUK2_OCCUPY, List_NUK2_OVERLAP, NULL, 0},   // TD ComList/OComList = NUK2 L-shape
             // WEAP: ExitCoordinate copied verbatim from TD's ClassWeapon
             // constructor in tiberiandawn/bdata.cpp:266 — pixel (22, 39) in
