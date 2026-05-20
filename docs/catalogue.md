@@ -92,7 +92,7 @@ Other:
   - **#11**: Armor parser strings — RA uses `light`/`heavy`, TD uses `aluminum`/`steel`. Manifest "aluminum"/"steel" was silently falling to `ARMOR_NONE`. Fixed in `Armor_From_Name` with aliases.
   - **#12**: `WEAP2` two-layer compositing — `BuildingClass::Draw_It` hardcodes a second-layer draw of `"WEAP2"` for any STRUCT_WEAP. Our TD WEAP sprite is single-piece so vanilla RA's yellow roof was rendering over TD's foundation. Fix: TD entries redirect overlay to `"TDWEAP2"`; TDWEAP2.ZIP bundled from TD source.
   - **#13**: Door-stage XML remap — RA uses 4 door stages, TD's WEAP2 has 20 frames (10 normal + 10 damaged). Tileset shapes 0-3 must map to TD frames 0,3,6,9 so the door fully opens.
-  - **#14**: **The smoking gun** — `redalert/drive.cpp:1930` has TWO `Track13[]` definitions under `#if (1) / #else`. The pure-south version is active despite `TrackControl[66]` declaring `DIR_SW` final facing. The SW Track13 in the `#else` block is dead code that matches TD's authentic SW exit. Initially flipped to `#if (0)` — caused vanilla Allied WEAP to also use SW (which is not what RA shipped). Final fix: kept Track13 as RA's pure-south, ADDED Track14 (= old #else SW version), added `OUT_OF_WEAPON_FACTORY_TD = 67` enum, added `TrackControl[67] = {14, 14, DIR_SW, F_}`. Vanilla Allied AI WEAP exit is now bit-identical to RA original; TD entries get TD-authentic SW exit. Eight hours of "but the math says zero snap" because we kept reading the SW version while the engine ran the south one. Per-tick `Coord` diagnostic in `drive.cpp:While_Moving` finally caught it.
+  - **#14**: **The smoking gun** — `redalert/drive.cpp:1930` has TWO `Track13[]` definitions under `#if (1) / #else`. The pure-south version is active despite `TrackControl[66]` declaring `DIR_SW` final facing. The SW Track13 in the `#else` block is dead code that matches TD's authentic SW exit. Initially flipped to `#if (0)` — caused vanilla Allied WEAP to also use SW (which is not what RA shipped). Final fix: kept Track13 as RA's pure-south, ADDED Track14 (= old #else SW version), added `OUT_OF_WEAPON_FACTORY_TD = 67` enum, added `TrackControl[67] = {14, 14, DIR_SW, F_}`. Vanilla Allied AI WEAP exit is now bit-identical to RA original (confirmed via 2026-05-20 playtest); TD entries get TD-authentic SW exit. Eight hours of "but the math says zero snap" because we kept reading the SW version while the engine ran the south one. Per-tick `Coord` diagnostic in `drive.cpp:While_Moving` finally caught it.
   - **#15**: `Exit_Object` STRUCT_WEAP case + `Mission_Unload` interaction. Documented the door-open → Force_Track(SW Track13) → continued Assign_Destination chain. TD entries get TD-authentic SW exit; vanilla WEAP kept south-exit behaviour for Allied AI compatibility.
 
 - **1-second-build dev hack** for HOUSE_GOOD/HOUSE_BAD players. `TechnoTypeClass::Time_To_Build` returns 15 ticks for testing iteration. Documented in TEMPORARY DEV HACKS section.
@@ -104,6 +104,56 @@ Other:
 - `tf_exit_object.log` (Exit_Object default-case capture)
 - `tf_weap_unlimbo.log` (TDWEAP Mission_Unload Force_Track capture)
 - `tf_weap_track.log` (per-tick Coord during Track13 — voluminous; consider disabling under `#if 0` if log volume becomes a problem)
+
+### Building bugs found during 2026-05-20 playtest (parked for next session)
+
+User playtest after the GDI roster shipped surfaced these — bundled into a
+"next session" list rather than fixed inline so we can close this session
+cleanly. All are GDI building issues (harvester behaviour, powers etc. are
+deferred until the unit catalogue work). Numbers match the user's report:
+
+1. **TDPROC / TDSILO storage values 10× too high.** Currently TDPROC stores
+   20000, TDSILO 15000. User reports they should be 2000 and 1500. Check the
+   rules.ini emit — our manifest has `storage: 1000` / `storage: 1500`
+   respectively but `Storage=` is being emitted with an extra zero somewhere.
+   Suspect: NightFalcon101's MODERATE_WARFARE patches in vanilla RA rules.ini
+   bumped storage 10×; our manifest emit may be inheriting that base. Search
+   `Storage=15000` / `Storage=20000` in rules.ini and trace.
+
+2. **TDPROC idle animation breaks after first harvester return.** Refinery
+   animates normally on build. When the harvester returns and docks, the
+   `IdleAnim` cycle stops and never restarts. Likely the donor's BSTATE
+   transitions (`BSTATE_ACTIVE`/`BSTATE_AUX1` siphoning cycles in TD's source
+   per `tiberiandawn/bdata.cpp:3814`) take over and our `IdleAnim*` override
+   never re-engages. Also (parked): there should be a *visible* "returning"
+   indicator on TDPROC when a harvester is on its way back, so the player
+   knows ore is incoming.
+
+3. **TDSILO renders with a 1×1 placement grid, should be 2×1.** Our manifest
+   has `shape_size: (48, 24)` (2 wide × 1 tall) but no `footprint` override,
+   so it inherits the RA SILO donor's BSIZE_21 footprint. Worth a Footprint=
+   preset addition in `bdata.cpp` to confirm the engine sees 2×1; possibly
+   also need `shape_size: (48, 48)` if the visual sprite is taller than the
+   footprint suggests.
+
+4. **TDEYE renders no on-map sprite + has a 2×2 placement grid, should be
+   L-shape (top-row overlap + bottom-row occupy, like NUK2).** Two bugs:
+   (a) sprite invisibility — TDEYE.ZIP is bundled and tileset XML wired
+   (verified during deploy), so the rendering failure is engine-side. Check
+   if the Logic=MSLO donor's `ImageData` inheritance produces something the
+   launcher can't resolve (similar to gotcha #1 IniName collisions class).
+   (b) footprint — Logic=MSLO inherits BSIZE_21 (2×1 missile silo), not the
+   2×2 L-shape TD's EYE actually has. Needs a new `EYE` preset in bdata.cpp
+   matching NUK2's `List_NUK2_OCCUPY` / `List_NUK2_OVERLAP` pattern.
+
+5. **TDGTWR and TDATWR have no weapons.** Towers exist on the map but don't
+   fire. Logic=PBOX and Logic=AGUN donors do have weapons in their
+   constructors, but the Logic= alias may not be copying `PrimaryWeapon` /
+   `SecondaryWeapon` pointers. Quick fix: explicitly set `primary=` in the
+   TDGTWR / TDATWR manifest entries (matching docs/catalogue.md's weapon-port
+   placeholder table — Vulcan for GTWR, TurretGun+Nike for ATWR). If that
+   doesn't take effect, the deeper issue is `BuildingTypeClass::Read_INI`'s
+   weapon-pointer lookup vs. our Logic= ImageData inheritance path.
 
 **Immediate next work — finish GDI building roster:**
 
