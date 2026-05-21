@@ -3255,6 +3255,21 @@ bool TechnoClass::Evaluate_Object(ThreatType method,
         if (weapon == NULL)
             return (NULL);
 
+        /*
+        ** Tiberian Factions mod: TDOBLI charge sound. TD's source code defines
+        ** VOC_LASER_POWER ("OBELPOWR") but never calls Sound_Effect for it —
+        ** the launcher's audio system must trigger it via BSTATE_AUX1 anim
+        ** binding in the closed-source side. With Logic=TSLA aliasing we don't
+        ** have a clean BSTATE_AUX1 hook, so play OBELPOWR at fire-time
+        ** alongside the weapon's Report=OBELRAY1. Plays back-to-back rather
+        ** than the TD-authentic warmup-then-fire timing — proper sequencing
+        ** lands when STRUCT_TDOBLI gets its own BuildingClass override during
+        ** building-separation M5.
+        */
+        if (tclass.IniName != NULL && stricmp(tclass.IniName, "TDOBLI") == 0) {
+            Sound_Effect(VOC_TD_LASER_POWER, Fire_Coord(which));
+        }
+
         BulletTypeClass const& btype = *weapon->Bullet;
 
         /*
