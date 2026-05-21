@@ -229,6 +229,11 @@ SourceType Source_From_Name(char const* name);
 char const* Name_From_Source(SourceType source);
 FacingType KN_To_Facing(int input);
 void const* Get_Radar_Icon(void const* shapefile, int shapenum, int frames, int zoomfactor);
+
+// Tiberian Factions mod: line-draw routing (Obelisk laser-beam render).
+// Routes via DLL_Draw_Line_Intercept in Remastered mode, LogicPage->Draw_Line
+// in classic mode. Ported from TD's conquer.cpp:2602.
+void CC_Draw_Line(int x, int y, int x1, int y1, unsigned char color, int frame, WindowNumberType window);
 // void CC_Draw_Shape(ObjectClass *object, void const * shapefile, int shapenum, int x, int y, WindowNumberType window,
 // ShapeFlags_Type flags, void const * fadingdata=0, void const * ghostdata=0, DirType rotation=DIR_N, long
 // scale=0x0100);

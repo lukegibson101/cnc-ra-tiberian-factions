@@ -254,6 +254,11 @@ public:
                                    const char* shape_file_name = NULL,
                                    char override_owner = HOUSE_NONE);
     static void DLL_Draw_Pip_Intercept(const ObjectClass* object, int pip);
+    // Tiberian Factions mod: ported from tiberiandawn/dllinterface.cpp. RA's
+    // DLL didn't expose line drawing to the launcher (only TD did), but the
+    // launcher's CNCObjectStruct already has Lines[]/NumLines fields. Needed
+    // for the TD Obelisk laser-beam render (techno.cpp BULLET_LASER branch).
+    static void DLL_Draw_Line_Intercept(int x, int y, int x1, int y1, unsigned char color, int frame);
     static bool Place(uint64 player_id, int buildable_type, int buildable_id, short cell_x, short cell_y);
     static bool Cancel_Placement(uint64 player_id, int buildable_type, int buildable_id);
     static bool Place_Super_Weapon(uint64 player_id, int buildable_type, int buildable_id, int x, int y);
@@ -3455,6 +3460,18 @@ void DLL_Draw_Pip_Intercept(const ObjectClass* object, int pip)
     DLLExportClass::DLL_Draw_Pip_Intercept(object, pip);
 }
 
+/*
+**  Tiberian Factions mod: line-draw boundary, ported verbatim from TD's
+**  dllinterface.cpp (tiberiandawn/dllinterface.cpp:2994-2996, 3336-3350).
+**  The launcher's CNCObjectStruct already has Lines[]/NumLines fields
+**  populated for rendering — TD's DLL just exposed this; we now do the
+**  same in RA's DLL. Used by the Obelisk laser-beam render.
+*/
+void DLL_Draw_Line_Intercept(int x, int y, int x1, int y1, unsigned char color, int frame)
+{
+    DLLExportClass::DLL_Draw_Line_Intercept(x, y, x1, y1, color, frame);
+}
+
 void DLLExportClass::DLL_Draw_Intercept(int shape_number,
                                         int x,
                                         int y,
@@ -3941,6 +3958,28 @@ void DLLExportClass::DLL_Draw_Pip_Intercept(const ObjectClass* object, int pip)
         base_object->Pips[base_object->NumPips] = pip;
         base_object->NumPips++;
         base_object->MaxPips = max(base_object->MaxPips, base_object->NumPips);
+    }
+}
+
+/*
+**  Tiberian Factions mod: ported verbatim from TD (tiberiandawn/
+**  dllinterface.cpp:3336-3350). Appends a line segment onto the
+**  per-object CNCObjectLineStruct array that the launcher reads each
+**  frame. Each call adds one line; the laser-beam render adds 3.
+*/
+void DLLExportClass::DLL_Draw_Line_Intercept(int x, int y, int x1, int y1, unsigned char color, int frame)
+{
+    CNCObjectStruct& root_object = ObjectList->Objects[TotalObjectCount];
+    if (root_object.NumLines < MAX_OBJECT_LINES) {
+        root_object.Lines[root_object.NumLines].X = x;
+        root_object.Lines[root_object.NumLines].Y = y;
+        root_object.Lines[root_object.NumLines].X1 = x1;
+        root_object.Lines[root_object.NumLines].Y1 = y1;
+        root_object.Lines[root_object.NumLines].Frame = frame;
+        root_object.Lines[root_object.NumLines].Color = color;
+
+        SortOrder++;
+        root_object.NumLines++;
     }
 }
 

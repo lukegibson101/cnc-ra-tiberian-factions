@@ -678,6 +678,9 @@ TechnoClass::TechnoClass(RTTIType rtti, int id, HousesType house)
     , ElectricZapDelay(-1)
     , ElectricZapTarget(0)
     , ElectricZapWhich(0)
+    , LineCount(0)
+    , LineFrame(0)
+    , LineMaxFrames(0)
     , PurchasePrice(0)
 {
     // IsOwnedByPlayer = (PlayerPtr == House);
@@ -1141,6 +1144,26 @@ void TechnoClass::Draw_It(int x, int y, WindowNumberType window) const
     */
     if ((ElectricZapDelay >= 0) && ElectricZapTarget) {
         Electric_Zap(ElectricZapTarget, ElectricZapWhich, window);
+    }
+
+    /*
+    **  Tiberian Factions mod: Obelisk laser-beam render. Ported from TD
+    **  (tiberiandawn/techno.cpp:1039-1049). Paints the cached 3-line beam
+    **  data for the duration set by Fire_At (LineMaxFrames). In Remastered
+    **  mode, only emit on the WINDOW_VIRTUAL pass and only the last line
+    **  (the central beam) to avoid drawing into the partial window —
+    **  matching TD's "show last line for virtual window" pattern.
+    */
+    if (LineFrame < LineMaxFrames) {
+        int start_line = (window == WINDOW_VIRTUAL) ? max(0, LineCount - 1) : 0;
+        for (int i = start_line; i < LineCount; i++) {
+            CC_Draw_Line(
+                Lines[i][0], Lines[i][1], Lines[i][2], Lines[i][3],
+                (unsigned char)Lines[i][4], LineFrame, window);
+        }
+        if (window == WINDOW_VIRTUAL) {
+            ((TechnoClass*)this)->LineFrame++;
+        }
     }
 
     int width, height;
@@ -2501,6 +2524,22 @@ bool TechnoClass::Evaluate_Object(ThreatType method,
         }
 
         /*
+        **  Tiberian Factions mod: laser-beam fade-out tick. Ported from TD
+        **  (tiberiandawn/techno.cpp:2029-2035). When LineFrame reaches
+        **  LineMaxFrames, clear the cached line geometry so the beam
+        **  stops rendering. Flag_To_Redraw keeps the launcher repainting
+        **  the tactical view while the lines are visible.
+        */
+        if (LineMaxFrames > 0) {
+            Map.Flag_To_Redraw(true);
+            if (LineFrame >= LineMaxFrames) {
+                LineCount = 0;
+                LineFrame = 0;
+                LineMaxFrames = 0;
+            }
+        }
+
+        /*
         ** If this building is being spied on by the player, need to redraw if selected
         ** since the money amount is rendering.
         */
@@ -3255,24 +3294,6 @@ bool TechnoClass::Evaluate_Object(ThreatType method,
         if (weapon == NULL)
             return (NULL);
 
-        /*
-        ** Tiberian Factions mod: TDOBLI charge sound. TD's source code defines
-        ** VOC_LASER_POWER ("OBELPOWR") but never calls Sound_Effect for it —
-        ** the launcher's audio system must trigger it via BSTATE_AUX1 anim
-        ** binding in the closed-source side. We play OBELPOWR at fire-time
-        ** alongside the weapon's Report=OBELRAY1. Plays back-to-back rather
-        ** than TD-authentic warmup-then-fire timing — proper sequencing lands
-        ** when STRUCT_TDOBLI gets its own BSTATE_AUX1 charge state on the
-        ** BuildingClass override (subsequent vertical-slice iteration).
-        **
-        ** Migrated to Type-keyed check 2026-05-21 (was IniName stricmp). Now
-        ** that STRUCT_TDOBLI exists as a real heap entry, dispatch is by
-        ** enum identity — faster and clearer than string compare.
-        */
-        if (tclass.What_Am_I() == RTTI_BUILDINGTYPE
-            && static_cast<BuildingTypeClass const&>(tclass).Type == STRUCT_TDOBLI) {
-            Sound_Effect(VOC_TD_LASER_POWER, Fire_Coord(which));
-        }
 
         BulletTypeClass const& btype = *weapon->Bullet;
 
@@ -3389,11 +3410,25 @@ bool TechnoClass::Evaluate_Object(ThreatType method,
 
             /*
             **	Electric zap animation.
+            **
+            **  Tiberian Factions mod: weapons that use the Charges=yes
+            **  state machine (IsElectric=true) but fire a BULLET_LASER
+            **  projectile (the Obelisk pattern) skip the lightning render
+            **  — the laser-line beam draw in Fire_At's later BULLET_LASER
+            **  branch is the substitute visual. The rest of the IsElectric
+            **  housekeeping (state reset, ammo tracking, target-click)
+            **  still runs because the underlying state machine is the same.
+            **  Bullet-type keyed rather than building-type keyed so any
+            **  future TD weapon firing BULLET_LASER auto-skips lightning
+            **  without code changes.
             */
             if (weapon->IsElectric) {
-                ElectricZapDelay = 3;
-                ElectricZapTarget = target_coord;
-                ElectricZapWhich = which;
+                bool render_lightning = !(weapon->Bullet != NULL && weapon->Bullet->Type == BULLET_LASER);
+                if (render_lightning) {
+                    ElectricZapDelay = 3;
+                    ElectricZapTarget = target_coord;
+                    ElectricZapWhich = which;
+                }
 #ifdef FIXIT_CSII //	checked - ajw 9/28/98
                 if (What_Am_I() != RTTI_INFANTRY) {
                     Set_Stage(0);
@@ -3482,6 +3517,48 @@ bool TechnoClass::Evaluate_Object(ThreatType method,
         }
 
 #endif
+        }
+
+        /*
+        **  Tiberian Factions mod: Obelisk laser beam render. Ported from TD
+        **  (tiberiandawn/techno.cpp:2481-2514). When a BULLET_LASER projectile
+        **  fires, paint three lines (the beam, slightly offset for thickness)
+        **  from the firing source to the target on the launcher's per-object
+        **  Lines[] array via CC_Draw_Line. The per-frame draw in Draw_It and
+        **  the per-tick countdown in AI() then animate them for 5 frames.
+        **  Also stamps a random scorch smudge at the target as TD does.
+        */
+        if (weapon->Bullet != NULL && weapon->Bullet->Type == BULLET_LASER) {
+            COORDINATE source = Fire_Coord(which);
+            // Use the validated target_coord computed earlier in Fire_At (line
+            // 3328-3334): object->Target_Coord() if the target is still a
+            // live object, else As_Coord(target) as fallback. Re-calling
+            // As_Coord(target) here can return 0 (world origin) if the target
+            // died mid-fire, which would draw the laser to the top-left
+            // corner of the map instead of where the target was — discovered
+            // 2026-05-21 via Deck playtest.
+            COORDINATE dest = target_coord;
+            int x, y, x1, y1;
+            Map.Coord_To_Pixel(source, x, y);
+            Map.Coord_To_Pixel(dest, x1, y1);
+            x += Map.TacPixelX;
+            x1 += Map.TacPixelX;
+            y += Map.TacPixelY;
+            y1 += Map.TacPixelY;
+            // Three lines: two outer at color 0x7D (slightly offset for
+            // visible thickness) and one center at 0x7F (brightest core).
+            Lines[0][0] = x + 1; Lines[0][1] = y; Lines[0][2] = x1; Lines[0][3] = y1; Lines[0][4] = 0x7D;
+            Lines[1][0] = x - 1; Lines[1][1] = y; Lines[1][2] = x1; Lines[1][3] = y1; Lines[1][4] = 0x7D;
+            Lines[2][0] = x;     Lines[2][1] = y; Lines[2][2] = x1; Lines[2][3] = y1; Lines[2][4] = 0x7F;
+            LineCount = 3;
+            LineFrame = 0;
+            LineMaxFrames = 5;
+            Map.Flag_To_Redraw(true);
+
+            // Scorch the ground at the target — random pick from the six
+            // SMUDGE_SCORCH variants, matching TD's behavior. Same caveat:
+            // use target_coord (validated) not As_Coord(target) directly.
+            new SmudgeClass(Random_Pick(SMUDGE_SCORCH1, SMUDGE_SCORCH6), target_coord);
         }
 
         return (bullet);

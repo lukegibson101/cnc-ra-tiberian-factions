@@ -233,6 +233,18 @@ public:
     int ElectricZapWhich;
 
     /*
+    **  Tiberian Factions mod: used by the Obelisk laser to cache laser-beam
+    **  rendering data (ported from tiberiandawn/techno.h:195-198). Each line
+    **  consists of: x, y, x1, y1, color. LineMaxFrames is the visible
+    **  duration in render ticks; LineFrame is the current counter, advanced
+    **  each frame in the draw routine and cleared when it reaches max.
+    */
+    int Lines[3][5];
+    int LineCount;
+    int LineFrame;
+    int LineMaxFrames;
+
+    /*
     **	This is the amount of money spent to produce this object. This value really
     **	only comes into play for the case of buildings that have special "free"
     **	objects available when purchased at the more expensive rate.

@@ -643,15 +643,11 @@ int BuildingClass::Shape_Number(void) const
 
         /*
         **	The Tesla Coil has a stage value that can be overridden by
-        **	its current state.
-        **
-        **	Tiberian Factions mod: STRUCT_TDOBLI shares this charge-pattern
-        **	behavior (target acquired → charging anim → fire → idle). Both
-        **	are driven by Charging_AI which itself is keyed on weapon's
-        **	IsElectric flag (Charges=yes in rules.ini), so the state machine
-        **	bits are already populated; we just need to extend this shape-
-        **	selection branch to read them. Future TD types with charge-fire
-        **	patterns (e.g. SAM, OBLI variants) extend this list.
+        **	its current state. Tiberian Factions mod: STRUCT_TDOBLI shares
+        **	this charge-pattern behavior — both use the engine's IsCharging
+        **	/IsCharged state machine driven by Charging_AI. Per-type
+        **	dispatch matches vanilla pattern (see STRUCT_SAM, STRUCT_TESLA,
+        **	STRUCT_CAMOPILLBOX checks elsewhere in this file).
         */
         if (*this == STRUCT_TESLA || *this == STRUCT_TDOBLI) {
             if (IsCharged) {
@@ -4088,8 +4084,8 @@ int BuildingClass::Mission_Deconstruction(void)
                         COORDINATE coord = Coord_Add(Center_Coord(), XYP_COORD(0, -12));
 
                         /* extra check to prevent building crew for Tesla Coil spawning
-                           one cell above building foundation. TDOBLI is also 1x2
-                           (BSIZE_12) so same offset applies. */
+                           one cell above building foundation. TDOBLI shares the
+                           same BSIZE_12 (1x2) footprint so the offset applies. */
                         if (*this == STRUCT_TESLA || *this == STRUCT_TDOBLI) {
                             coord = Map[coord].Adjacent_Cell(FACING_S)->Cell_Coord();
                         }
@@ -6128,7 +6124,15 @@ void BuildingClass::Charging_AI(void)
                     IsCharging = true;
                     Set_Stage(0);
                     Set_Rate(3);
-                    Sound_Effect(VOC_TESLA_POWER_UP, Coord);
+                    // Per-building charge-start sound. Tesla Coil plays its
+                    // electrostatic warmup; STRUCT_TDOBLI plays the Obelisk
+                    // power-up (OBELPOWR). Future: a per-weapon ChargeSound
+                    // field would eliminate the type check.
+                    if (*this == STRUCT_TDOBLI) {
+                        Sound_Effect(VOC_TD_LASER_POWER, Coord);
+                    } else {
+                        Sound_Effect(VOC_TESLA_POWER_UP, Coord);
+                    }
                 }
             }
         } else {

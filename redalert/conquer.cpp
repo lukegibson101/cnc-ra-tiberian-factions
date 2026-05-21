@@ -2807,6 +2807,26 @@ void CC_Draw_Shape(const ObjectClass* object,
     CC_Draw_Shape(shapefile, shapenum, x, y, window, flags, fadingdata, ghostdata, rotation);
 }
 
+/*
+**  Tiberian Factions mod: line-draw routing. Ported from TD
+**  (tiberiandawn/conquer.cpp:2602-2611). In Remastered mode, hands off
+**  the line geometry to the launcher via DLL_Draw_Line_Intercept (which
+**  appends to the current draw-object's Lines[] array). In classic mode,
+**  draws directly to the LogicPage. Used by the Obelisk laser-beam render.
+*/
+extern void DLL_Draw_Line_Intercept(int x, int y, int x1, int y1, unsigned char color, int frame);
+
+void CC_Draw_Line(int x, int y, int x1, int y1, unsigned char color, int frame, WindowNumberType window)
+{
+#ifdef REMASTER_BUILD
+    if (window == WINDOW_VIRTUAL) {
+        DLL_Draw_Line_Intercept(x, y, x1, y1, color, frame);
+        return;
+    }
+#endif
+    LogicPage->Draw_Line(x, y, x1, y1, color);
+}
+
 void CC_Draw_Pip(const ObjectClass* object,
                  void const* shapefile,
                  int shapenum,
@@ -4086,7 +4106,7 @@ bool Force_CD_Available(int cd)
 #endif
 
 #ifdef FRENCH
-                sprintf(buffer, "InsŠrez le %s", _cd_name[cd]);
+                sprintf(buffer, "Insï¿½rez le %s", _cd_name[cd]);
 #else
 #ifdef GERMAN
                 sprintf(buffer, "Bitte %s", _cd_name[cd]);
@@ -4097,7 +4117,7 @@ bool Force_CD_Available(int cd)
             } else {
 #ifdef DVD
 #ifdef FRENCH
-                sprintf(buffer, "InsŠrez le %s", _cd_name[4]);
+                sprintf(buffer, "Insï¿½rez le %s", _cd_name[4]);
 #else
 #ifdef GERMAN
                 sprintf(buffer, "Bitte %s", _cd_name[4]);
