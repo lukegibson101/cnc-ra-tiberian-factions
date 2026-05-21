@@ -439,6 +439,29 @@ void AircraftTypeClass::One_Time(void)
         ((void const*&)uclass.ImageData) = MFCD::Retrieve(fullname);
     }
 
+    /*
+    **	Mod-entry ImageData fallback. Our TD-prefixed aircraft (currently
+    **	just AIRCRAFT_TDCARGO / "TDC17") have no legacy SHP in the MIX
+    **	files — only TGA tilesets bundled in resources/.../UNITS/<NAME>.ZIP.
+    **	MFCD::Retrieve above returned NULL for them, so AircraftClass::Draw_It
+    **	would bail at its `if (!shapefile) return;` guard and the plane stays
+    **	invisible. Mirror the building/unit Logic= alias pattern
+    **	(bdata.cpp:3452, udata.cpp:1391) by copying a vanilla donor's
+    **	ImageData pointer — the launcher's Techno_Draw_Object overlay then
+    **	resolves the actual sprite by IniName ("TDC17") via the RA_UNITS.XML
+    **	tileset, regardless of which pointer was supplied. Badger is the
+    **	closest fixed-wing donor in the vanilla heap.
+    */
+    AircraftTypeClass& tdcargo = As_Reference(AIRCRAFT_TDCARGO);
+    if (tdcargo.ImageData == NULL) {
+        AircraftTypeClass const& donor = As_Reference(AIRCRAFT_BADGER);
+        ((void const*&)tdcargo.ImageData) = donor.ImageData;
+    }
+    if (tdcargo.CameoData == NULL) {
+        AircraftTypeClass const& donor = As_Reference(AIRCRAFT_BADGER);
+        ((void const*&)tdcargo.CameoData) = donor.CameoData;
+    }
+
     LRotorData = MFCD::Retrieve("LROTOR.SHP");
     RRotorData = MFCD::Retrieve("RROTOR.SHP");
 }

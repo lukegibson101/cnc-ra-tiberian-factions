@@ -6350,7 +6350,17 @@ bool TechnoClass::Evaluate_Object(ThreatType method,
         **	type in this house's inventory. If not, then don't bother to scan
         **	for one.
         */
-        if (House->Get_Quantity(b) != 0) {
+        // TD-port (reinf.cpp SOURCE_AIR cargo-plane delivery): when looking
+        // for STRUCT_AIRSTRIP, also accept TDAFLD buildings. TDAFLD has
+        // Type=STRUCT_WEAP via Logic=WEAP aliasing, so the standard
+        // Get_Quantity(STRUCT_AIRSTRIP) + (*building == STRUCT_AIRSTRIP)
+        // checks miss it. The TDAFLD-as-airstrip semantics matter for the
+        // cargo-plane delivery path — Nod's airstrip is the docking target
+        // even though the engine treats it as a war factory internally.
+        bool looking_for_airstrip = (b == STRUCT_AIRSTRIP);
+        bool has_candidate = (House->Get_Quantity(b) != 0)
+                             || (looking_for_airstrip && House->Get_Quantity(STRUCT_WEAP) != 0);
+        if (has_candidate) {
             int bestval = -1;
 
             /*
@@ -6360,15 +6370,35 @@ bool TechnoClass::Evaluate_Object(ThreatType method,
             for (int index = 0; index < Buildings.Count(); index++) {
                 BuildingClass* building = Buildings.Ptr(index);
 
+                if (building == NULL)
+                    continue;
+
+                // Match: native StructType, OR TDAFLD-as-airstrip fallback.
+                bool tdafld_match = looking_for_airstrip
+                                    && strncmp(building->Class->IniName, "TDAFLD", 6) == 0;
+                bool type_match = (*building == b) || tdafld_match;
+                if (!type_match)
+                    continue;
+
                 /*
                 **	Check to see if the building qualifies (preliminary scan).
                 */
-                if (building != NULL && (friendly ? building->House->Is_Ally(this) : building->House == House)
-                    && !building->IsInLimbo && *building == b
+                // RADIO_CAN_LOAD is helipad/refinery semantics — our TDAFLD
+                // (Logic=WEAP) doesn't accept it via its inherited WEAP
+                // Receive_Message. Skip that check for the TDAFLD case; the
+                // actual docking handshake uses RADIO_HELLO later in
+                // PICK_AIRSTRIP, which buildings accept liberally. Without
+                // this bypass Find_Docking_Bay returns NULL, PICK_AIRSTRIP
+                // falls to its retreat path, and the plane despawns
+                // immediately off-radar with the cargo still attached.
+                bool can_load_ok = tdafld_match
+                                   || ((TechnoClass*)this)->Transmit_Message(RADIO_CAN_LOAD, building) == RADIO_ROGER;
+                if ((friendly ? building->House->Is_Ally(this) : building->House == House)
+                    && !building->IsInLimbo
                     && (What_Am_I() == RTTI_AIRCRAFT
                         || Map[building->Center_Coord()].Zones[Techno_Type_Class()->MZone]
                                == Map[Center_Coord()].Zones[Techno_Type_Class()->MZone])
-                    && ((TechnoClass*)this)->Transmit_Message(RADIO_CAN_LOAD, building) == RADIO_ROGER) {
+                    && can_load_ok) {
 
                     /*
                     **	If the building qualifies and this building is better than the

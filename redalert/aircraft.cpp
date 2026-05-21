@@ -1164,6 +1164,177 @@ int AircraftClass::Mission_Unload(void)
     assert(Aircraft.ID(this) == ID);
     assert(IsActive);
 
+    // Fixed-wing cargo plane (AIRCRAFT_TDCARGO) gets a verbatim port of
+    // TD's fixed-wing Mission_Unload state machine
+    // (tiberiandawn/aircraft.cpp:1044+). RA shipped only the helicopter
+    // half — the fixed-wing branch was stubbed to Mission_Hunt because
+    // vanilla RA has no aircraft that ever needs to land + unload.
+    //
+    // TD's flow: PICK_AIRSTRIP (find docked airstrip, radio handshake)
+    // → FLY_TO_AIRSTRIP (approach, scale Altitude/Height down to a low
+    // pass, drop cargo at distance < 0x0080) → BUG_OUT (head off-map via
+    // MISSION_RETREAT). The plane never truly lands — the visual is a
+    // low pass with the vehicle Unlimbo'd onto a Find_Exit_Cell-picked
+    // strip-adjacent cell as the plane flies through.
+    //
+    // Differences from TD: `Altitude` → `Height` (RA naming), Validate()
+    // removed, AIRCRAFT_CARGO → AIRCRAFT_TDCARGO.
+    // Diagnostic 2026-05-21: unload log is unexpectedly empty — log file
+    // not created at all, so Mission_Unload is never being called for our
+    // cargo plane. Unconditional first-entry log + per-call marker so we
+    // can see (1) does Mission_Unload run for the plane at all, (2) is
+    // *this == AIRCRAFT_TDCARGO actually true at runtime.
+    static FILE* s_unload_log = NULL;
+    static int s_unload_tick = 0;
+    if (s_unload_log == NULL) {
+        char dpath[512];
+        const char* dprof = getenv("USERPROFILE");
+        if (dprof != NULL && dprof[0] != '\0') {
+            snprintf(dpath, sizeof(dpath),
+                     "%s\\Documents\\CnCRemastered\\tf_tdcargo_unload.log", dprof);
+            s_unload_log = fopen(dpath, "w");
+        }
+    }
+    if (s_unload_log && (s_unload_tick++ % 5) == 0) {
+        int navd = Target_Legal(NavCom) ? Distance(As_Movement_Coord(NavCom)) : -1;
+        TechnoClass* contact = In_Radio_Contact() ? Contact_With_Whom() : NULL;
+        const char* contact_ininame = "(none)";
+        if (contact && contact->What_Am_I() == RTTI_BUILDING) {
+            contact_ininame = ((BuildingClass*)contact)->Class->IniName;
+        }
+        fprintf(s_unload_log,
+                "t=%d Status=%d Mission=%d Coord=0x%08x Height=%d "
+                "NavLegal=%d Radio=%d Contact=[%s] navdist=%d Attached=%d Facing=%d Rot=%d\n",
+                s_unload_tick, (int)Status, (int)Mission,
+                (unsigned)Coord, Height,
+                Target_Legal(NavCom) ? 1 : 0,
+                In_Radio_Contact() ? 1 : 0,
+                contact_ininame, navd,
+                Is_Something_Attached() ? 1 : 0,
+                (int)PrimaryFacing.Current(),
+                PrimaryFacing.Is_Rotating() ? 1 : 0);
+        fflush(s_unload_log);
+    }
+
+    if (Class->IsFixedWing && *this == AIRCRAFT_TDCARGO) {
+        enum
+        {
+            PICK_AIRSTRIP,
+            FLY_TO_AIRSTRIP,
+            BUG_OUT
+        };
+
+        switch (Status) {
+
+        /*
+        **	Find a suitable airfield to land at.
+        */
+        case PICK_AIRSTRIP:
+            if (!Target_Legal(NavCom) || !In_Radio_Contact()) {
+                BuildingClass* target_building = As_Building(NavCom);
+                BuildingClass* building = (target_building != NULL && *target_building == STRUCT_AIRSTRIP)
+                                              ? target_building
+                                              : Find_Docking_Bay(STRUCT_AIRSTRIP, false);
+                if (building) {
+                    if (Transmit_Message(RADIO_HELLO, building) == RADIO_ROGER) {
+                        Set_Speed(0xFF);
+                        Assign_Destination(building->As_Target());
+                        if (Team.Is_Valid()) {
+                            Team->Target = NavCom;
+                        }
+                        Status = FLY_TO_AIRSTRIP;
+                    }
+                }
+
+                if (Status == PICK_AIRSTRIP) {
+                    // No airstrip available — bail. (TD checks STRUCTF_AIRSTRIP
+                    // in ActiveBScan; we leave that check out since our TDAFLD
+                    // is Logic=WEAP-aliased and won't appear in the AIRSTRIP
+                    // bitmask anyway. If radio contact dropped, just retreat.)
+                    Assign_Mission(MISSION_RETREAT);
+                    PrimaryFacing.Set_Desired(Random_Pick(DIR_N, DIR_MAX));
+                    SecondaryFacing.Set_Desired(PrimaryFacing.Desired());
+                    return (TICKS_PER_SECOND * 3);
+                }
+            } else {
+                Status = FLY_TO_AIRSTRIP;
+            }
+            break;
+
+        /*
+        **	Home in on target. When close enough, drop the cargo.
+        */
+        case FLY_TO_AIRSTRIP:
+            if (!Target_Legal(NavCom) || !In_Radio_Contact()) {
+                Status = PICK_AIRSTRIP;
+            } else {
+                if (!Is_Something_Attached()) {
+                    Status = BUG_OUT;
+                    return (1);
+                }
+
+                if (!PrimaryFacing.Is_Rotating()) {
+                    PrimaryFacing.Set_Desired(Direction(As_Movement_Coord(NavCom)));
+                }
+                SecondaryFacing.Set_Desired(PrimaryFacing.Desired());
+
+                int navdist = Distance(As_Movement_Coord(NavCom));
+                Height = FLIGHT_LEVEL;
+                if (navdist < 0x0600) {
+                    Height = Fixed_To_Cardinal(FLIGHT_LEVEL, Cardinal_To_Fixed(0x0600, navdist));
+                }
+
+                // TD uses navdist < 0x0080 (half-cell) which is tight enough
+                // for a TD-speed plane to overshoot. RA's Speed=40 cargo plane
+                // covers ~8 leptons/tick at MPH_FAST and overshoots, then
+                // turns back and orbits. Widen to 0x0200 (2 cells) so the
+                // plane commits to drop on first approach. Luke's spec is a
+                // straight-line east-bound pass, no orbiting.
+                if (navdist < 0x0200) {
+                    FootClass* unit = (FootClass*)Detach_Object();
+
+                    if (unit) {
+                        CELL cell = Contact_With_Whom()->Find_Exit_Cell(unit);
+                        if (cell) {
+                            ScenarioInit++;
+                            if (!unit->Unlimbo(Cell_Coord(cell))) {
+                                Attach(unit);
+                            } else {
+                                if (*this == AIRCRAFT_TDCARGO && House == PlayerPtr) {
+                                    Speak(VOX_REINFORCEMENTS);
+                                }
+                                unit->IsALoaner = false;
+                                unit->IsLocked = true;
+                                unit->Scatter(0, true);
+                            }
+                            ScenarioInit--;
+                            Transmit_Message(RADIO_OVER_OUT);
+                            Assign_Target(TARGET_NONE);
+                        } else {
+                            Attach(unit);
+                        }
+
+                        Status = BUG_OUT;
+                    } else {
+                        Status = BUG_OUT;
+                    }
+                }
+                return (1);
+            }
+            break;
+
+        /*
+        **	All cargo unloaded, head off the map.
+        */
+        case BUG_OUT:
+            Assign_Mission(MISSION_RETREAT);
+            return (1);
+        }
+        return (MissionControl[Mission].Normal_Delay() + Random_Pick(0, 2));
+    }
+
+    // Vanilla RA fixed-wing handling — Badger/U2/MIG/YAK never unload;
+    // their MISSION_UNLOAD short-circuits to Mission_Hunt.
     if (Class->IsFixedWing) {
 
         Assign_Target(NavCom);
@@ -2016,6 +2187,16 @@ void AircraftClass::Enter_Idle_Mode(bool)
             if (Team.Is_Valid())
                 return;
 
+            // TD-port: in-air cargo plane carrying a unit and acting as a
+            // loaner (i.e., enters from map edge, drops off, leaves) gets
+            // MISSION_UNLOAD here. Mirrors tiberiandawn/aircraft.cpp:1869-
+            // 1876 — the dormant code RA never ported, the gap that makes
+            // fixed-wing cargo delivery impossible by default. Once cargo
+            // is dropped, Is_Something_Attached() is false → falls through
+            // to the existing MISSION_RETREAT / etc. paths.
+            if (Is_Something_Attached() && IsALoaner) {
+                mission = MISSION_UNLOAD;
+            } else
             /*
             **	Weapon equipped helicopters that run out of ammo and were
             **	brought in as reinforcements will leave the map.

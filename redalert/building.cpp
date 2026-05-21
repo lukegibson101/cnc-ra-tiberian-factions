@@ -2159,36 +2159,98 @@ int BuildingClass::Exit_Object(TechnoClass* base)
             // edge with the vehicle attached, lands on the strip via
             // MISSION_UNLOAD, drops the unit, and retreats off-map.
             // Mirrors the reinf.cpp SOURCE_AIR pattern from tiberiandawn.
-            if (strncmp(Class->IniName, "TDAFLD", 6) == 0) {
-                AircraftClass* plane = new AircraftClass(AIRCRAFT_TDCARGO,
-                                                         House->Class->House);
-                if (plane != NULL) {
-                    COORDINATE dock = Docking_Coord();
-                    // Spawn at east map edge, Y-aligned with the docking
-                    // coord so the plane flies due west toward the strip.
-                    // 0x80 lepton (= half-cell) buffer past the visible
-                    // map edge keeps the plane off-screen at spawn.
-                    int border_x = Cell_To_Lepton(Map.MapCellX + Map.MapCellWidth) | 0x80;
-                    COORDINATE spawn = XY_Coord(border_x, Coord_Y(dock));
-                    ScenarioInit++;
-                    if (plane->Unlimbo(spawn, DIR_W)) {
-                        plane->IsALoaner = true;
-                        plane->Attach((FootClass*)base);
-                        plane->Assign_Destination(::As_Target(Coord_Cell(dock)));
-                        plane->Assign_Mission(MISSION_UNLOAD);
-                        plane->Commence();
-                        Assign_Mission(MISSION_UNLOAD);
-                        ScenarioInit--;
-                        return (2);
+            {
+                // Diagnostic 2026-05-21: TDAFLD cargo-plane delivery
+                // didn't appear on first Deck playtest. Log every Exit_Object
+                // call for STRUCT_WEAP-type buildings so we can see which
+                // IniNames hit this branch and where (if at all) the TDAFLD
+                // path bails. Path uses %USERPROFILE% per
+                // reference-diagnostic-paths memory.
+                static FILE* s_afld_log = NULL;
+                if (s_afld_log == NULL) {
+                    char dpath[512];
+                    const char* dprof = getenv("USERPROFILE");
+                    if (dprof != NULL && dprof[0] != '\0') {
+                        snprintf(dpath, sizeof(dpath),
+                                 "%s\\Documents\\CnCRemastered\\tf_tdafld_exit.log", dprof);
+                        s_afld_log = fopen(dpath, "w");
                     }
-                    // Spawn failed — clean up the plane and fall through
-                    // so the engine can retry with the existing TDWEAP exit
-                    // path as a fallback rather than wedging the factory.
-                    delete plane;
-                    ScenarioInit--;
                 }
-                // Fallthrough — vehicle drives out the strip directly if
-                // we couldn't spawn the cargo plane for any reason.
+                if (s_afld_log != NULL) {
+                    fprintf(s_afld_log,
+                            "Exit_Object STRUCT_WEAP IniName=[%s] base=%p baseclass=%d\n",
+                            Class->IniName, (void*)base, base ? base->What_Am_I() : -1);
+                    fflush(s_afld_log);
+                }
+
+                if (strncmp(Class->IniName, "TDAFLD", 6) == 0) {
+                    AircraftClass* plane = new AircraftClass(AIRCRAFT_TDCARGO,
+                                                             House->Class->House);
+                    if (s_afld_log) {
+                        fprintf(s_afld_log,
+                                "  TDAFLD branch entered. plane=%p AIRCRAFT_COUNT=%d aircraft_active=%d\n",
+                                (void*)plane, AIRCRAFT_COUNT, Aircraft.Count());
+                        fflush(s_afld_log);
+                    }
+                    if (plane != NULL) {
+                        COORDINATE dock = Docking_Coord();
+                        // Spawn off the EAST edge, fly west toward dock,
+                        // continue west off the west edge after cargo drop.
+                        // Constant speed throughout — no decel on approach.
+                        // Altitude scales down on approach (low-pass landing)
+                        // then scales back up via MISSION_RETREAT.
+                        int spawn_x = Cell_To_Lepton(Map.MapCellX + Map.MapCellWidth) | 0x80;
+                        COORDINATE spawn = XY_Coord(spawn_x, Coord_Y(dock));
+                        ScenarioInit++;
+                        bool unlimbo_ok = plane->Unlimbo(spawn, DIR_W);
+                        if (s_afld_log) {
+                            fprintf(s_afld_log,
+                                    "  dock=0x%08x spawn=0x%08x spawn_x=%d (east edge) Unlimbo=%d\n",
+                                    (unsigned)dock, (unsigned)spawn, spawn_x, unlimbo_ok);
+                            fflush(s_afld_log);
+                        }
+                        if (unlimbo_ok) {
+                            // TD-port (reinf.cpp:386-415 SOURCE_AIR + our
+                            // patched Find_Docking_Bay): spawn with cargo
+                            // attached and MISSION_UNLOAD directly. NO
+                            // pre-NavCom, NO pre-radio handshake.
+                            // Mission_Unload's PICK_AIRSTRIP runs on the
+                            // first AI tick and uses Find_Docking_Bay
+                            // (patched in techno.cpp to recognize TDAFLD)
+                            // to find the airstrip, transmit RADIO_HELLO,
+                            // assign NavCom to building target, transition
+                            // to FLY_TO_AIRSTRIP — exactly as TD does.
+                            //
+                            // Earlier attempts: (1) pre-assign NavCom +
+                            // radio → collided with engine's per-tick
+                            // Enter_Idle_Mode and AircraftClass::Assign_
+                            // Destination Status=0 reset, producing 580-
+                            // tick orbit. (2) MISSION_HUNT initially →
+                            // engine's Enter_Idle_Mode auto-promote
+                            // theory was wrong; plane stayed in HUNT
+                            // forever.
+                            plane->IsALoaner = true;
+                            plane->Attach((FootClass*)base);
+                            plane->Set_Speed(0xFF);
+                            plane->Assign_Mission(MISSION_UNLOAD);
+                            plane->Commence();
+                            ScenarioInit--;
+                            if (s_afld_log) {
+                                fprintf(s_afld_log,
+                                        "  Dispatched (UNLOAD, no pre-NavCom). Coord=0x%08x Mission=%d\n",
+                                        (unsigned)plane->Coord, (int)plane->Mission);
+                                fflush(s_afld_log);
+                            }
+                            return (2);
+                        }
+                        delete plane;
+                        ScenarioInit--;
+                        if (s_afld_log) {
+                            fprintf(s_afld_log, "  Unlimbo failed; plane deleted; falling through.\n");
+                            fflush(s_afld_log);
+                        }
+                    }
+                }
             }
             if (Mission == MISSION_UNLOAD) {
                 for (int index = 0; index < Buildings.Count(); index++) {
