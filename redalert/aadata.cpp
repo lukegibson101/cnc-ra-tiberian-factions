@@ -206,6 +206,33 @@ static AircraftTypeClass const OrcaHeli(AIRCRAFT_HIND,  // What kind of aircraft
                                         MISSION_HUNT    // Default mission for aircraft.
 );
 
+// TD C-17 cargo plane — Nod airstrip vehicle delivery. Mirrors
+// tiberiandawn/aadata.cpp:218 CargoPlane. Not player-buildable, not
+// selectable, not a legal target — Stage 3 spawns this aircraft from
+// the TDAFLD factory completion hook with a UnitClass attached as
+// cargo, then assigns MISSION_UNLOAD with destination = airstrip docking
+// coord. TXT_BADGER reused as placeholder text (never shown).
+static AircraftTypeClass const TDCargoPlane(AIRCRAFT_TDCARGO, // What kind of aircraft is this.
+                                            TXT_BADGER,       // Translated text (placeholder — never shown).
+                                            "TDC17",          // INI name of aircraft (TD-prefixed per gotcha #1).
+                                            0x0000,           //	Vertical offset.
+                                            0x0000,           // Primary weapon offset along turret centerline.
+                                            0x0000,           // Primary weapon lateral offset along turret centerline.
+                                            true,             // Fixed wing aircraft?
+                                            false,            // Equipped with a rotor?
+                                            false,            // Custom rotor sets for each facing?
+                                            false,            // Can this aircraft land on clear terrain?
+                                            true,             // Is it invisible on radar?
+                                            false,            // Can the player select it so as to give it orders?
+                                            false,            // Can it be assigned as a target for attack.
+                                            false,            // Is it insignificant (won't be announced)?
+                                            false,            // Is it immune to normal combat damage?
+                                            STRUCT_AIRSTRIP,  // Preferred landing building.
+                                            0xFF,             // Landing speed
+                                            32,               // Number of rotation stages.
+                                            MISSION_HUNT      // Default mission for aircraft.
+);
+
 /***********************************************************************************************
  * AircraftTypeClass::AircraftTypeClass -- Constructor for aircraft objects.                   *
  *                                                                                             *
@@ -345,6 +372,7 @@ void AircraftTypeClass::Init_Heap(void)
     new AircraftTypeClass(YakPlane);
     new AircraftTypeClass(AttackHeli);
     new AircraftTypeClass(OrcaHeli);
+    new AircraftTypeClass(TDCargoPlane);
 }
 
 /***********************************************************************************************
@@ -612,6 +640,11 @@ void AircraftTypeClass::Dimensions(int& width, int& height) const
     if (Type == AIRCRAFT_BADGER) {
         width = 56;
         height = 56;
+    } else if (Type == AIRCRAFT_TDCARGO) {
+        // C-17 sprite is ~250x150 across facings (peak frame 245x156).
+        // Round up so map-refresh bounding rect doesn't leave ghost trails.
+        width = 256;
+        height = 160;
     } else {
         width = 21;
         height = 20;

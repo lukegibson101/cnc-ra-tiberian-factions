@@ -1722,6 +1722,7 @@ typedef enum AircraftType : char
     AIRCRAFT_YAK,       // Yak attack plane.
     AIRCRAFT_LONGBOW,   // Apache gunship.
     AIRCRAFT_HIND,      // Soviet attach helicopter.
+    AIRCRAFT_TDCARGO,   // TD C-17 cargo plane (Nod airstrip vehicle delivery).
 
     AIRCRAFT_COUNT,
     AIRCRAFT_NONE = -1,
@@ -1735,6 +1736,7 @@ typedef enum AircraftType : char
 #define AIRCRAFTF_YAK       (1L << AIRCRAFT_YAK)
 #define AIRCRAFTF_LONGBOW   (1L << AIRCRAFT_LONGBOW)
 #define AIRCRAFTF_HIND      (1L << AIRCRAFT_HIND)
+#define AIRCRAFTF_TDCARGO   (1L << AIRCRAFT_TDCARGO)
 
 // PG inline AircraftType operator++(AircraftType &, int);
 
