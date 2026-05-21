@@ -544,6 +544,54 @@ static BuildingTypeClass const ClassTesla(STRUCT_TESLA,
                                           (short const*)OList12 // OVERLAPLIST:List of overlap cell offset.
 );
 
+/*
+**  Tiberian Factions mod: Nod Obelisk of Light (STRUCT_TDOBLI).
+**
+**  First fully-separated TD building (2026-05-21). All data and behavior
+**  state lives in this own BuildingTypeClass instance — no Logic= alias
+**  inheritance from any RA donor. Footprint matches TD's authentic 1x2
+**  vertical shape (BSIZE_12), same as RA Tesla Coil (which is why TSLA
+**  was the v0.3-era alias donor). Anims defaults set up by constructor
+**  are overridden via the [TDOBLI] rules.ini section's IdleAnim* /
+**  ActiveAnim* fields plus the One_Time _anims[] table below.
+**
+**  Stats (Cost, Power, Strength, etc) are read from rules.ini via
+**  Read_INI and override the constructor defaults — the constructor's
+**  job is only to wire up Type/IniName/footprint/initial-bool-flags.
+**
+**  See docs/building-separation-plan.md for the M1-M6 plan that this
+**  entry kicks off, and docs/td-building-separation-recipe.md (in
+**  progress) for the per-building recipe distilled from this work.
+*/
+static BuildingTypeClass const ClassObelisk(STRUCT_TDOBLI,
+                                            TXT_NONE,        // Display name token; rules.ini Name= overrides.
+                                            "TDOBLI",        // IniName.
+                                            FACING_S,        // Foundation direction from center of building.
+                                            XYP_COORD(0, 0), // Exit point for produced units.
+                                            REMAP_ALTERNATE, // Sidebar remap logic.
+                                            0x00C8,          // Vertical offset (same as TSLA — tall structure).
+                                            0x0000,          // Primary weapon offset along turret centerline.
+                                            0x0000,          // Primary weapon lateral offset along turret centerline.
+                                            false,           // Is this building a fake (decoy?)
+                                            false,           // Animation rate regulated for constant speed?
+                                            false,           // Always use the given name for the building?
+                                            false,           // Is this a wall type structure?
+                                            false,           // Simple (one frame) damage imagery?
+                                            false,           // Is it invisible to radar?
+                                            true,            // Can the player select this?
+                                            true,            // Is this a legal target for attack or move?
+                                            false,           // Is this an insignificant building?
+                                            false,           // Theater specific graphic image?
+                                            false,           // Does it have a rotating turret? (Obelisk fires straight)
+                                            true,            // Can the building be color remapped to indicate owner?
+                                            RTTI_NONE,       // The object type produced at this factory.
+                                            DIR_N,           // Starting idle frame to match construction.
+                                            BSIZE_12,        // SIZE: 1x2, TD-authentic Obelisk footprint.
+                                            NULL,            // Preferred exit cell list.
+                                            (short const*)List12, // OCCUPYLIST.
+                                            (short const*)OList12 // OVERLAPLIST.
+);
+
 static BuildingTypeClass const ClassTurret(STRUCT_TURRET,
                                            TXT_TURRET,      // NAME:			Short name of the structure.
                                            "GUN",           // NAME:			Short name of the structure.
@@ -3004,6 +3052,11 @@ void BuildingTypeClass::Init_Heap(void)
     new BuildingTypeClass(ClassLarva1); // STRUCT_LARVA1
     new BuildingTypeClass(ClassLarva2); // STRUCT_LARVA2
 #endif
+
+    // Tiberian Factions mod buildings — append after vanilla entries in
+    // exact STRUCT_TD* enum order (per the constraint at the top of this
+    // function: heap allocation block index == StructType enum value).
+    new BuildingTypeClass(ClassObelisk); // STRUCT_TDOBLI (Nod Obelisk of Light)
 }
 
 /***********************************************************************************************
@@ -3071,6 +3124,13 @@ void BuildingTypeClass::One_Time(void)
 #ifdef REMASTER_BUILD
         {STRUCT_AIRSTRIP, BSTATE_IDLE, 0, 8, 3},
 #endif
+        // Tiberian Factions mod: TDOBLI 4-frame charge cycle at rate 15
+        // ticks/frame — TD-authentic OBELISK_ANIMATION_RATE per
+        // tiberiandawn/defines.h:323. Cycle plays during BSTATE_ACTIVE
+        // (target acquired + firing). Future: separate BSTATE_AUX1 for
+        // warmup-then-fire sequencing per TD's original (currently both
+        // OBELPOWR + OBELRAY1 trigger on BSTATE_ACTIVE entry).
+        {STRUCT_TDOBLI, BSTATE_ACTIVE, 0, 4, 15},
     };
 
     for (int sindex = STRUCT_FIRST; sindex < STRUCT_COUNT; sindex++) {
@@ -3114,6 +3174,44 @@ void BuildingTypeClass::One_Time(void)
         */
         _makepath(fullname, NULL, NULL, building.Graphic_Name(), ".SHP");
         ((void const*&)building.ImageData) = MFCD::Retrieve(fullname);
+
+        /*
+        **  Tiberian Factions mod: TD building SHPs (TDOBLI.SHP, TDOBLIMAKE.SHP
+        **  etc.) don't exist in REDALERT.MIX or any standard mix file — they're
+        **  not the source of truth for Remastered rendering, where the launcher
+        **  intercepts Draw_It and resolves the actual texture via the TGA
+        **  tileset XML keyed on IniName. But the engine bails before reaching
+        **  the launcher intercept when ImageData/BuildupData is NULL (Draw_It
+        **  draws with width=height=0 → invisible). Borrow a vanilla building's
+        **  ImageData and BuildupData pointers as stubs so the engine reaches
+        **  the intercept, where the launcher then renders our TGA tilesets.
+        **
+        **  Use TSLA's data — matching BSIZE_12 footprint (relevant for hit-test
+        **  bounds pre-intercept). Classic-mode SHP routing (where TSLA's
+        **  actual SHP would render and TD's wouldn't) is a separate concern,
+        **  deferred to mod-mixfile bundling work.
+        **
+        **  Also re-initialise BSTATE_CONSTRUCTION's frame count and rate to
+        **  match the borrowed BuildupData — without this, the engine's auto-
+        **  timing computed at line 3164-3167 would have been NULL-skipped, so
+        **  BSTATE_CONSTRUCTION would stay at its constructor default (1
+        **  frame, rate 0) and the buildup animation would never advance.
+        */
+        if (building.Type >= STRUCT_TDOBLI && building.Type < STRUCT_COUNT) {
+            BuildingTypeClass const& stub = As_Reference(STRUCT_TESLA);
+            if (building.ImageData == NULL) {
+                ((void const*&)building.ImageData) = stub.ImageData;
+            }
+            if (building.BuildupData == NULL && stub.BuildupData != NULL) {
+                ((void const*&)building.BuildupData) = stub.BuildupData;
+                int count = Get_Build_Frame_Count(stub.BuildupData);
+                int timedelay = 1;
+                if (count > 0) {
+                    timedelay = (Rule.BuildupTime * TICKS_PER_MINUTE) / count;
+                }
+                building.Init_Anim(BSTATE_CONSTRUCTION, 0, count, timedelay);
+            }
+        }
     }
 
     // Try to load weap2.shp and tesla coil's lightning shapes

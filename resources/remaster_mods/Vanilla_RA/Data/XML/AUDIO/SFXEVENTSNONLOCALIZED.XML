@@ -6081,6 +6081,28 @@ WARNING: This file was written by [PETROGLYPH\Mike_Legg] using the Petroglyph SF
     </SampleNamesList>
   </SFXEvent>
 
+
+  <!-- TD building construction loop (BSTATE_CONSTRUCTION audio). Plays
+       once per building when buildup begins, replacing RAR/C_SFX_BUILD5
+       for STRUCT_TDxxxx types (dispatch logic in building.cpp). -->
+  <SFXEvent Name="RAC_SFX_CONSTRU2" Preset="_PRESET_MD_MOBIUS_2D">
+    <IsPreset> False </IsPreset>
+    <MinPitch>100</MinPitch>
+    <MaxPitch>100</MaxPitch>
+    <SampleNamesList>
+      <entry> TDC_SFX_CONSTRU2.WAV </entry>
+    </SampleNamesList>
+  </SFXEvent>
+
+  <SFXEvent Name="RAR_SFX_CONSTRU2" Preset="_PRESET_MD_MOBIUS_2D">
+    <IsPreset> False </IsPreset>
+    <MinPitch>100</MinPitch>
+    <MaxPitch>100</MaxPitch>
+    <SampleNamesList>
+      <entry> TDR_SFX_CONSTRU2.WAV </entry>
+    </SampleNamesList>
+  </SFXEvent>
+
 </SFXEvents>
 
 

@@ -1458,6 +1458,17 @@ typedef enum StructType : char
     STRUCT_LARVA2,
 #endif
 
+    // Tiberian Factions mod buildings — fully separated STRUCT_TDxxxx
+    // entries with own BuildingTypeClass instances, own _anims[], own
+    // _presets[], own ImageData routing. No Logic= alias inheritance from
+    // vanilla RA donors — see docs/building-separation-plan.md for the
+    // committed strategic direction (2026-05-21).
+    //
+    // First vertical slice: STRUCT_TDOBLI (Nod Obelisk of Light).
+    // Subsequent buildings (TDATWR, TDGUN, TDPYLE, TDNUKE, TDPROC, etc.)
+    // land per-tier in the building-separation milestones.
+    STRUCT_TDOBLI,
+
     STRUCT_COUNT,
     STRUCT_FIRST = 0
 } StructType;
@@ -3387,10 +3398,11 @@ typedef enum VocType : short
     // Tiberian Factions mod sounds — TD assets re-registered under TD-prefixed
     // VOC enum values so we never alias vanilla RA Report= references. Each
     // maps to a TD .AUD asset name in SoundEffectName[] (audio.cpp).
-    VOC_TD_ROCKET2,     // TD rocket launch (light, for TOW_TWO / TOMAHAWK / NIKE)
-    VOC_TD_TANK4,       // TD big gun tank fire (TURRET_GUN / 120MM)
-    VOC_TD_LASER,       // Obelisk humming laser beam
-    VOC_TD_LASER_POWER, // Obelisk laser warming-up sound
+    VOC_TD_ROCKET2,      // TD rocket launch (light, for TOW_TWO / TOMAHAWK / NIKE)
+    VOC_TD_TANK4,        // TD big gun tank fire (TURRET_GUN / 120MM)
+    VOC_TD_LASER,        // Obelisk humming laser beam
+    VOC_TD_LASER_POWER,  // Obelisk laser warming-up sound
+    VOC_TD_CONSTRUCTION, // TD building construction loop (CONSTRU2.AUD)
 
     VOC_COUNT,
     VOC_FIRST = 0

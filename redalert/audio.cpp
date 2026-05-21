@@ -254,6 +254,7 @@ struct SoundEffectNameStruct
     {"TNKFIRE6", 1, IN_NOVAR}, // VOC_TD_TANK4			TD big gun tank fire
     {"OBELRAY1", 1, IN_NOVAR}, // VOC_TD_LASER			Obelisk humming laser beam
     {"OBELPOWR", 1, IN_NOVAR}, // VOC_TD_LASER_POWER	Obelisk laser warm-up
+    {"CONSTRU2", 5, IN_NOVAR}, // VOC_TD_CONSTRUCTION	TD building construction loop
 };
 
 //

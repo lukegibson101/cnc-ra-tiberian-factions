@@ -599,9 +599,17 @@ TDSAM = {
 }
 
 
+# SEPARATED 2026-05-21: TDOBLI is the first fully-separated building.
+# It now exists as STRUCT_TDOBLI in defines.h with ClassObelisk in
+# bdata.cpp's Init_Heap. The [TDOBLI] rules.ini section is still
+# Read_INI'd to populate Cost/Power/etc, but no Logic= alias.
+# Asset bundling via this manifest entry still applies (extract ZIPs,
+# patch RA_STRUCTURES.XML + RABUILDABLES.XML). When/if we re-run
+# scripts/add_building.py for TDOBLI, the emitter must NOT re-add
+# TDOBLI to [NewBuildings] index nor emit Logic=. Set logic=None here.
 TDOBLI = {
     "ininame":     "TDOBLI",
-    "logic":       "TSLA",
+    "logic":       None,
     "td_asset":    "OBLI",
     "footprint":   "",
     "shape_size":  (24, 48),

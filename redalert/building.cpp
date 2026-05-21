@@ -3933,7 +3933,18 @@ int BuildingClass::Mission_Construction(void)
         Begin_Mode(BSTATE_CONSTRUCTION);
         Transmit_Message(RADIO_BUILDING);
         if (House->IsPlayerControl) {
-            Sound_Effect(VOC_CONSTRUCTION, Coord);
+            // Tiberian Factions mod: dispatch the TD construction loop
+            // (CONSTRU2.AUD) for STRUCT_TDxxxx buildings instead of RA's
+            // BUILD5. Vanilla RA buildings keep their original sound.
+            // First STRUCT_TD* member (TDOBLI) used as the lower bound;
+            // when more separated buildings land, this check stays as a
+            // range comparison so we don't have to per-IniName special-
+            // case here.
+            if (Class->Type >= STRUCT_TDOBLI && Class->Type < STRUCT_COUNT) {
+                Sound_Effect(VOC_TD_CONSTRUCTION, Coord);
+            } else {
+                Sound_Effect(VOC_CONSTRUCTION, Coord);
+            }
         }
         Status = DURING;
         break;
