@@ -407,14 +407,10 @@ TDATWR = {
     "sensors":     None,
     "strength":    300,
     "armor":       "aluminum",
-    # Dual-role interim: Hellfire (heat-seeking AP missile, RA Longbow's
-    # payload) for ground + inherited ZSU-23 AA from AGUN donor via Logic=
-    # alias. Hellfire closer to TD's TOW_TWO feel than the original TurretGun
-    # substitute — heat-seeking projectile gives a missile-tower visual that
-    # matches the TD ATWR silhouette better than a cannon. Engine dispatches
-    # per target type (ground→Hellfire, air→ZSU-23). Replace with the proper
-    # TOW_TWO port when Phase W1 lands (docs/weapon-ports.md).
-    "primary":     "Hellfire",
+    # TD-authentic TOW_TWO ported per docs/weapon-ports.md Phase W1. Single
+    # missile slot, AA + AG capable via new BULLET_SSM bullet type. Replaces
+    # the Hellfire/ZSU-23 dual-role interim.
+    "primary":     "TowTwo",
     "secondary":   None,
     "base_normal": True,
     "capturable":  False,

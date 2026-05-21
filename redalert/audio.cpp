@@ -246,6 +246,11 @@ struct SoundEffectNameStruct
     {"BEACON", 10, IN_NOVAR}, // VOC_BEACON			Beacon sound.
 
 #endif
+
+    // Tiberian Factions mod sounds — TD asset name in column 1; engine resolves
+    // via Voc_From_Name() during rules.ini parse. TD's ROCKET2.AUD ships in
+    // CONFIG.MEG; if not found at runtime, mod bundles it in its own mixfile.
+    {"ROCKET2", 1, IN_NOVAR}, // VOC_TD_ROCKET2		TD rocket launch (light)
 };
 
 //

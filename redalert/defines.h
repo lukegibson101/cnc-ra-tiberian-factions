@@ -1332,6 +1332,10 @@ typedef enum BulletType : char
     BULLET_NUKE_UP,
     BULLET_NUKE_DOWN,
 
+    // Tiberian Factions mod bullets ported from TD (tiberiandawn/defines.h
+    // BULLET_*). Each maps to a [Name] section in rules.ini.
+    BULLET_SSM, // Surface-to-surface missile — homing, AA + AG capable.
+
     BULLET_COUNT,
     BULLET_FIRST = 0
 } BulletType;
@@ -2763,6 +2767,10 @@ typedef enum WeaponType : char
     WEAPON_CARRIER,
 #endif
 
+    // Tiberian Factions mod weapons ported from TD (tiberiandawn/defines.h
+    // WEAPON_*). Each maps to a [Name] section in rules.ini.
+    WEAPON_TOW_TWO, // Advanced Guard Tower missile (anti-armor + AA).
+
     WEAPON_COUNT,
     WEAPON_FIRST = 0
 } WeaponType;
@@ -3367,6 +3375,12 @@ typedef enum VocType : short
     VOC_BEACON,
 
 #endif
+
+    // Tiberian Factions mod sounds — TD assets re-registered under TD-prefixed
+    // VOC enum values so we never alias vanilla RA Report= references. Each
+    // maps to a TD .AUD asset name in SoundEffectName[] (audio.cpp).
+    VOC_TD_ROCKET2, // TD rocket launch (light, for TOW_TWO / TOMAHAWK / NIKE)
+
     VOC_COUNT,
     VOC_FIRST = 0
 } VocType;

@@ -176,6 +176,10 @@ void BulletTypeClass::Init_Heap(void)
     new BulletTypeClass("GPSSatellite"); //	BULLET_GPS_SATELLITE
     new BulletTypeClass("NukeUp");       //	BULLET_NUKE_UP
     new BulletTypeClass("NukeDown");     //	BULLET_NUKE_DOWN
+
+    // Tiberian Factions mod bullets — keep in enum order (BulletType.h
+    // additions appended after BULLET_NUKE_DOWN).
+    new BulletTypeClass("SSM");          //	BULLET_SSM (TD TOW/TOMAHAWK)
 }
 
 /***********************************************************************************************

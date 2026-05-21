@@ -697,6 +697,10 @@ bool RulesClass::Heap_Maximums(CCINIClass& ini)
     new WeaponTypeClass("AirAssault");
 #endif
 
+    // Tiberian Factions mod weapons — keep in enum order (WeaponType
+    // additions appended after WEAPON_CARRIER).
+    new WeaponTypeClass("TowTwo"); // WEAPON_TOW_TWO (Advanced Guard Tower)
+
     return (true);
 }
 
