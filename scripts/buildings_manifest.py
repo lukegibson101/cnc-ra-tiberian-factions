@@ -410,7 +410,7 @@ TDATWR = {
     # TD-authentic TOW_TWO ported per docs/weapon-ports.md Phase W1. Single
     # missile slot, AA + AG capable via new BULLET_SSM bullet type. Replaces
     # the Hellfire/ZSU-23 dual-role interim.
-    "primary":     "TowTwo",
+    "primary":     "TDTowTwo",
     "secondary":   None,
     "base_normal": True,
     "capturable":  False,
@@ -553,7 +553,7 @@ TDGUN = {
     # TD-authentic cannon: ROF=60 (vs RA TurretGun ROF=50), Damage=40, Range=6.
     # Separate from RA's [TurretGun] so vanilla Allied Turret balance stays
     # untouched and Nod balance is independently tunable. Phase W1.
-    "primary":     "TdTurretGun",
+    "primary":     "TDTurretGun",
     "secondary":   None,
     "base_normal": True,
     "capturable":  False,
@@ -562,7 +562,7 @@ TDGUN = {
     "bib":         False,
     "idle_anim":   (0, 1, 0),
     "active_anim": (0, 1, 0),
-    "notes":       "TD Nod Turret (1x1 rotating gun). Donor RA GUN (Soviet Turret) provides matching 1x1 BSIZE_11 footprint. Primary=TdTurretGun for TD-authentic stats. Defensive (0,1,0) clamps on idle/active until TGA frame counts verified.",
+    "notes":       "TD Nod Turret (1x1 rotating gun). Donor RA GUN (Soviet Turret) provides matching 1x1 BSIZE_11 footprint. Primary=TDTurretGun for TD-authentic stats. Defensive (0,1,0) clamps on idle/active until TGA frame counts verified.",
 }
 
 
@@ -625,7 +625,7 @@ TDOBLI = {
     # (100%-vs-all-armor), Sound=OBELRAY1. Until M5, the projectile is
     # invisible (Inviso=yes) so the Obelisk looks like it's not firing —
     # known limitation, accept until visual port lands.
-    "primary":     "OblsLaser",
+    "primary":     "TDOblsLaser",
     "secondary":   None,
     "base_normal": True,
     "capturable":  False,
@@ -634,7 +634,7 @@ TDOBLI = {
     "bib":         False,
     "idle_anim":   (0, 1, 0),
     "active_anim": (0, 4, 15),
-    "notes":       "TD Nod Obelisk of Light (1x2 beam tower). Donor RA TSLA (Tesla Coil) provides matching BSIZE_12 footprint. Primary=OblsLaser (Phase W1 data port; render in M5). active_anim=(0,4,15) is TD-authentic OBELISK_ANIMATION_RATE=15 — 4-frame charge cycle.",
+    "notes":       "TD Nod Obelisk of Light (1x2 beam tower). Donor RA TSLA (Tesla Coil) provides matching BSIZE_12 footprint. Primary=TDOblsLaser (Phase W1 data port; render in M5). active_anim=(0,4,15) is TD-authentic OBELISK_ANIMATION_RATE=15 — 4-frame charge cycle.",
 }
 
 

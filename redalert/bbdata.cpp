@@ -178,9 +178,13 @@ void BulletTypeClass::Init_Heap(void)
     new BulletTypeClass("NukeDown");     //	BULLET_NUKE_DOWN
 
     // Tiberian Factions mod bullets — keep in enum order (BulletType.h
-    // additions appended after BULLET_NUKE_DOWN).
-    new BulletTypeClass("SSM");          //	BULLET_SSM (TD TOW/TOMAHAWK)
-    new BulletTypeClass("Laser");        //	BULLET_LASER (TD Obelisk beam)
+    // additions appended after BULLET_NUKE_DOWN). Per project convention,
+    // all TD-ported entities get a "TD" prefix in their IniName so they
+    // can be visually identified in rules.ini regardless of name collision
+    // with vanilla RA (e.g. "Laser" → "TDLaser" so it's clear at a glance
+    // that this is the TD Obelisk beam, not a hypothetical RA laser).
+    new BulletTypeClass("TDSSM");        //	BULLET_SSM (TD TOW/TOMAHAWK)
+    new BulletTypeClass("TDLaser");      //	BULLET_LASER (TD Obelisk beam)
 }
 
 /***********************************************************************************************
