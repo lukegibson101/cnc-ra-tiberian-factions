@@ -115,6 +115,28 @@ def emit_block(entry):
         lines.append("IdleAnimStart=%d" % start)
         lines.append("IdleAnimCount=%d" % count)
         lines.append("IdleAnimRate=%d"  % rate)
+    # Active anim block: parallel to Idle, fires while BSTATE_ACTIVE (producing).
+    # Required for BARR/TENT donors whose _anims[] sets ACTIVE the same as IDLE,
+    # so a clamped IDLE without an ACTIVE clamp still cycles past the SHP's frames
+    # whenever the building is training infantry.
+    active = entry.get("active_anim")
+    if active is not None:
+        start, count, rate = active
+        lines.append("ActiveAnimStart=%d" % start)
+        lines.append("ActiveAnimCount=%d" % count)
+        lines.append("ActiveAnimRate=%d"  % rate)
+    # Buildup anim block: BSTATE_CONSTRUCTION override. Necessary when our
+    # TGA-pack MAKE frame count differs from the Logic= donor's MAKE.SHP
+    # frame count — One_Time() can't auto-init for mod entries (no SHP in
+    # REDALERT.MIX), so donor's count is inherited and any extra frames in
+    # our TGA pack get truncated. Set count to match the MAKE tileset shape
+    # count (= MAKE.ZIP frame count + 1 for the empty shape 0).
+    buildup = entry.get("buildup_anim")
+    if buildup is not None:
+        start, count, rate = buildup
+        lines.append("BuildupAnimStart=%d" % start)
+        lines.append("BuildupAnimCount=%d" % count)
+        lines.append("BuildupAnimRate=%d"  % rate)
     return "\n".join(lines) + "\n"
 
 
@@ -171,13 +193,21 @@ def register_in_new_buildings(content, ininame):
     itself is decorative (the heap slot comes from BuildingTypes.Count()).
     Re-registration is a no-op.
     '''
-    if NEW_BUILDINGS_SECTION not in content:
+    # Anchor to "\n[NewBuildings]" so we hit the section header at the start of
+    # a line, not a literal occurrence of the same string inside a comment
+    # (which would have us appending the registration into the comment block,
+    # creating an orphan that the engine never reads).
+    section_anchor = "\n" + NEW_BUILDINGS_SECTION
+    if section_anchor not in content and not content.startswith(NEW_BUILDINGS_SECTION):
         raise RuntimeError(
             "rules.ini missing %s section — add one manually (see "
             "docs/adding-td-buildings.md step 1)." % NEW_BUILDINGS_SECTION
         )
 
-    sec_start = content.index(NEW_BUILDINGS_SECTION)
+    if content.startswith(NEW_BUILDINGS_SECTION):
+        sec_start = 0
+    else:
+        sec_start = content.index(section_anchor) + 1  # +1 to skip the leading \n
     # Find end of section: next "\n[Section]" or EOF
     rest = content[sec_start + len(NEW_BUILDINGS_SECTION):]
     next_section = rest.find("\n[")

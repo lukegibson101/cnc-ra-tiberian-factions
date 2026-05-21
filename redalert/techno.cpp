@@ -6785,11 +6785,11 @@ bool TechnoClass::Evaluate_Object(ThreatType method,
 
         /*
         **  DEV TOGGLE — instant-build (~1 second) for GDI / Nod players for
-        **  fast catalogue iteration. Disabled by default in v0.3.0-phase5e.
-        **  Flip #if 0 → 1 to re-enable for layout testing. Search
-        **  "DEV TOGGLE — instant build" to find. 15 ticks ≈ 1s at 15/sec.
+        **  fast catalogue iteration. Re-enabled 2026-05-21 for Nod testing.
+        **  Flip #if 1 → 0 to disable. Search "DEV TOGGLE — instant build" to
+        **  find. 15 ticks ≈ 1s at 15/sec.
         */
-#if 0
+#if 1
         if (hptr->Class->House == HOUSE_GOOD || hptr->Class->House == HOUSE_BAD
             || hptr->ActLike      == HOUSE_GOOD || hptr->ActLike      == HOUSE_BAD) {
             return 15;

@@ -567,7 +567,15 @@ HouseClass::HouseClass(HousesType house)
     , BuildSpeedBias(1)
     , RepairDelay(0)
     , BuildDelay(0)
-    , ActLike(Class->House)
+    // Tiberian Factions: HOUSE_GOOD (GDI) acts like HOUSE_GREECE (canonical
+    // Allied house — 'G' campaign prefix); HOUSE_BAD (Nod) acts like
+    // HOUSE_USSR (canonical Soviet house). Without this, ActLike-gated code
+    // paths (Soviet parabomb spawns, Allied/Soviet infantry voice prefixes,
+    // mapsel.cpp side selection, saveload.cpp side persistence) never fire
+    // for the new factions, leaving them without their inherited roster.
+    , ActLike(Class->House == HOUSE_GOOD ? HOUSE_GREECE
+            : Class->House == HOUSE_BAD  ? HOUSE_USSR
+            : Class->House)
     , IsHuman(false)
     , WasHuman(false)
     , IsPlayerControl(false)
@@ -991,6 +999,60 @@ bool HouseClass::Can_Build(ObjectTypeClass const* type, HousesType house) const
                 continue;
             if (t == STRUCT_SOVIET_TECH && Has_Building_Active(STRUCT_ADVANCED_TECH))
                 continue;
+        }
+        /*
+        **  Tiberian Factions: TD-themed barracks satisfy vanilla barracks
+        **  prereqs so HOUSE_GOOD (TDPYLE) and HOUSE_BAD (TDHAND) can build
+        **  the inherited Allied / Soviet infantry rosters. Lookup is by
+        **  IniName via the heap-aware As_Pointer; Types are cached after
+        **  first resolution since they're stable for the rest of the run.
+        **  Pre-D2 stopgap — proper fix is a BehavesLike= rules.ini field.
+        */
+        {
+            static int tdpyle_type = -2;  // -2 = unresolved, -1 = absent
+            static int tdhand_type = -2;
+            static int tdweap_type = -2;
+            static int tdafld_type = -2;
+            if (tdpyle_type == -2) {
+                BuildingTypeClass const* p = BuildingTypeClass::As_Pointer("TDPYLE");
+                tdpyle_type = p ? p->Type : -1;
+            }
+            if (tdhand_type == -2) {
+                BuildingTypeClass const* p = BuildingTypeClass::As_Pointer("TDHAND");
+                tdhand_type = p ? p->Type : -1;
+            }
+            if (tdweap_type == -2) {
+                BuildingTypeClass const* p = BuildingTypeClass::As_Pointer("TDWEAP");
+                tdweap_type = p ? p->Type : -1;
+            }
+            if (tdafld_type == -2) {
+                BuildingTypeClass const* p = BuildingTypeClass::As_Pointer("TDAFLD");
+                tdafld_type = p ? p->Type : -1;
+            }
+            if (t == STRUCT_TENT && tdpyle_type >= 0 && Has_Building_Active(tdpyle_type))
+                continue;
+            if (t == STRUCT_BARRACKS && tdhand_type >= 0 && Has_Building_Active(tdhand_type))
+                continue;
+            // TDPYLE ↔ TDHAND mutual equivalence. Catalogue master table notes
+            // shared-prereq buildings (TDHPAD = "TDPYLE / TDHAND") which were
+            // emitted with Prerequisite=TDPYLE only. Without this, Nod players
+            // can't satisfy TDHPAD's prereq because they own TDHAND, not TDPYLE.
+            if (tdpyle_type >= 0 && tdhand_type >= 0) {
+                if (t == tdpyle_type && Has_Building_Active(tdhand_type))
+                    continue;
+                if (t == tdhand_type && Has_Building_Active(tdpyle_type))
+                    continue;
+            }
+            // STRUCT_WEAP (RA War Factory) — satisfied by TDWEAP (GDI) or
+            // TDAFLD (Nod airstrip stopgap). TDAFLD uses Logic=WEAP donor for
+            // vehicle-factory behaviour, but its heap Type is past STRUCT_COUNT
+            // so it doesn't match STRUCT_WEAP automatically.
+            if (t == STRUCT_WEAP) {
+                if (tdweap_type >= 0 && Has_Building_Active(tdweap_type))
+                    continue;
+                if (tdafld_type >= 0 && Has_Building_Active(tdafld_type))
+                    continue;
+            }
         }
         return (false);
     }

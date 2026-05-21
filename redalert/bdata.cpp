@@ -3886,15 +3886,18 @@ bool BuildingTypeClass::Read_INI(CCINIClass& ini)
                     SecondaryWeapon = donor->SecondaryWeapon;
                 }
                 // Do NOT copy IsTurretEquipped from the donor. AGUN/SAM/TURR
-                // donors render their turret as a separate facing-indexed SHP
-                // drawn on top of the base sprite (UnitClass::BodyShape lookup
-                // in Fetch_Stage). Our TD mod entries ship a combined sprite
-                // — flipping the turret flag on makes the engine try to find a
-                // 32-facing turret SHP that doesn't exist and the building
-                // renders as a broken single-cell strip. Without the flag,
-                // Turret_Facing falls back to direction-to-target (building.cpp:2677),
-                // so the weapon still fires and aims correctly; the visual just
-                // doesn't rotate. That matches TD's static-tower aesthetic.
+                // donors render turret rotation via PrimaryFacing which the
+                // engine's AI rotates toward targets — but for our TD mod
+                // entries, enabling the flag causes the firing logic to gate
+                // on PrimaryFacing.Current() == direction-to-target (which
+                // is never satisfied since nothing rotates PrimaryFacing in
+                // our setup), so the turret renders rotating-capable but
+                // never actually fires. Without the flag, Turret_Facing()
+                // falls back to Direction(TarCom) (building.cpp:2685) — the
+                // weapon fires correctly aimed at the target; the visual
+                // just doesn't rotate. Wiring proper rotation needs the
+                // turret-tracking AI tied in, deferred to the TD-specific
+                // weapons work alongside TDOBLI/TDSAM polish.
             }
         }
 
@@ -3937,6 +3940,52 @@ bool BuildingTypeClass::Read_INI(CCINIClass& ini)
         // ClassStorage + StoreList = {0, 1}. With Bib=yes the placement
         // preview shows 2×2 (top row foundation, bottom row bib decoration).
         static short const List_SILO_OCCUPY[] = {0, 1, REFRESH_EOL};
+        // HAND (TD Hand of Nod) — 2 wide × 3 tall L-shape, copied verbatim from
+        // tiberiandawn/bdata.cpp:143 (ListHand) and :163 (OListHand). Occupy
+        // covers the middle row and bottom-right "thumb"; overlap is the top
+        // row, bottom-left, and middle-left (the overlap-on-middle-left mirrors
+        // a quirk of TD's data and is harmless — occupy wins for placement).
+        static short const List_HAND_OCCUPY[]  = {MAP_CELL_W, MAP_CELL_W + 1, MAP_CELL_W * 2 + 1, REFRESH_EOL};
+        static short const List_HAND_OVERLAP[] = {0, 1, MAP_CELL_W * 2, MAP_CELL_W, REFRESH_EOL};
+        // HAND exit cells — copied verbatim from tiberiandawn/bdata.cpp:77
+        // (TD's ExitHand). Twelve cells fanning out around the 2×3 footprint
+        // so infantry can spawn on any of the building's perimeter tiles.
+        static short const Exit_HAND[] = {
+            XYCELL(2, 3),  XYCELL(1, 3),  XYCELL(0, 3),  XYCELL(2, 2),
+            XYCELL(-1, 3), XYCELL(-1, 2), XYCELL(0, 0),  XYCELL(1, 0),
+            XYCELL(-1, 0), XYCELL(2, 0),  XYCELL(2, 1),  XYCELL(-1, 1),
+            REFRESH_EOL
+        };
+        // AFLD (TD Nod Airstrip) — 4 wide × 2 tall, fully occupied (no overlap).
+        // Copied verbatim from tiberiandawn/bdata.cpp:136 (List42).
+        static short const List_AFLD_OCCUPY[]  = {
+            0, 1, 2, 3,
+            MAP_CELL_W, MAP_CELL_W + 1, MAP_CELL_W + 2, MAP_CELL_W + 3,
+            REFRESH_EOL
+        };
+        // AFLD exit cells — copied verbatim from tiberiandawn/bdata.cpp:109
+        // (TD's ExitAirstrip). 16 cells around the 4×2 perimeter so vehicles
+        // can drive off in any direction. Order is the TD source order; first
+        // slot is the preferred exit (top-left corner outside).
+        static short const Exit_AFLD[] = {
+            XYCELL(-1, -1), XYCELL(-1, 0),  XYCELL(-1, 1), XYCELL(-1, 2),
+            XYCELL(0, -1),  XYCELL(0, 2),
+            XYCELL(1, -1),  XYCELL(1, 2),
+            XYCELL(2, -1),  XYCELL(2, 2),
+            XYCELL(3, -1),  XYCELL(3, 2),
+            XYCELL(4, -1),  XYCELL(4, 0),   XYCELL(4, 1),  XYCELL(4, 2),
+            REFRESH_EOL
+        };
+        // TMPL (TD Temple of Nod) — 3 wide × 3 tall with overlap on top row,
+        // copied verbatim from tiberiandawn/bdata.cpp:144 (ListTmpl, bottom
+        // 2 rows occupied) and :164 (OListTmpl, top row overlap). Same
+        // shape pattern as TDFACT/TDWEAP construction-yard-style buildings.
+        static short const List_TMPL_OCCUPY[]  = {
+            MAP_CELL_W,     MAP_CELL_W + 1, MAP_CELL_W + 2,
+            MAP_CELL_W * 2, MAP_CELL_W * 2 + 1, MAP_CELL_W * 2 + 2,
+            REFRESH_EOL
+        };
+        static short const List_TMPL_OVERLAP[] = {0, 1, 2, REFRESH_EOL};
         // WEAP exit cells — copied verbatim from tiberiandawn/bdata.cpp:89
         // (TD's ExitWeap array). Order matters: first slot is the preferred
         // exit cell. The commented-out cells in the TD source (row 0
@@ -3964,6 +4013,19 @@ bool BuildingTypeClass::Read_INI(CCINIClass& ini)
             {"NUK2", BSIZE_22, List_NUK2_OCCUPY, List_NUK2_OVERLAP, NULL, 0},
             {"EYE",  BSIZE_22, List_NUK2_OCCUPY, List_NUK2_OVERLAP, NULL, 0},   // TD ComList/OComList = NUK2 L-shape
             {"PYLE", BSIZE_22, List_PYLE_OCCUPY, List_PYLE_OVERLAP, NULL, 0},
+            // HAND: 2x3 L-shape. ExitCoordinate copied verbatim from TD's
+            // ClassHand constructor (tiberiandawn/bdata.cpp:1242) — pixel
+            // (36, 63) in a 48x72 px building footprint, placing the spawn
+            // at the bottom-right "thumb" cell where the door is. Without
+            // this override, BARR's 2x2-shaped ExitCoordinate gets inherited
+            // and infantry spawn inside the foundation.
+            {"HAND", BSIZE_23, List_HAND_OCCUPY, List_HAND_OVERLAP, Exit_HAND, XYP_COORD(36, 63)},
+            // AFLD: 4x2 Nod Airstrip. Stopgap reuses WEAP donor; vehicles emerge
+            // via WEAP's TD-SW exit track (gotchas #14-15) since RA has no
+            // native airstrip mechanic. Cargo-plane choreography is a separate
+            // engine slice deferred to its own session.
+            {"AFLD", BSIZE_42, List_AFLD_OCCUPY, NULL,              Exit_AFLD, 0},
+            {"TMPL", BSIZE_33, List_TMPL_OCCUPY, List_TMPL_OVERLAP, NULL, 0},   // Temple of Nod, 3x3 (top row overlap)
             {"SILO", BSIZE_21, List_SILO_OCCUPY, NULL,              NULL, 0},   // 2x1 + bib (TD-authentic)
             {"HQ",   BSIZE_22, List_NUK2_OCCUPY, List_NUK2_OVERLAP, NULL, 0},   // TD ComList/OComList = NUK2 L-shape
             // WEAP: ExitCoordinate copied verbatim from TD's ClassWeapon
@@ -4016,18 +4078,51 @@ bool BuildingTypeClass::Read_INI(CCINIClass& ini)
         }
 
         /*
-        **  Per-building idle-animation override. TD passive animations
-        **  (e.g. NUKE's blinking generator) require Anims[BSTATE_IDLE] to
-        **  cycle multiple frames, but Logic= aliasing inherits the donor's
-        **  Anims which may be static (POWR has no idle anim entry in the
-        **  hardcoded _anims[] table). Setting IdleAnimCount>1 turns on
-        **  cycling for the mod entry without touching the donor.
+        **  Per-building per-BSTATE animation override. Two directions:
+        **  (a) TURN ON cycling — TD passive animations (e.g. NUKE blinking
+        **      generator) require Anims[BSTATE_IDLE] to cycle multiple
+        **      frames, but Logic= aliasing inherits the donor's Anims which
+        **      may be static (POWR has no idle anim entry in _anims[]).
+        **  (b) TURN OFF / CLAMP cycling — TD-Assets sprite packs sometimes
+        **      collapse N+1 SHP frames to 3 TGAs (e.g. HAND.ZIP has 1 idle
+        **      + 1 damaged + 1 destroyed = 3 frames), but the donor's anim
+        **      cycles 10. Without a clamp the engine renders frames past
+        **      the end of the TGA list, producing a sprite that flickers
+        **      between idle / damaged / destroyed / blank.
+        **  Setting IdleAnim or ActiveAnim with Count > 0 fires the override.
+        **  ActiveAnim covers the BSTATE_ACTIVE branch used while the building
+        **  is producing (matters for BARR/TENT-class entries where _anims[]
+        **  sets ACTIVE the same way as IDLE).
         */
         int idle_count = ini.Get_Int(Name(), "IdleAnimCount", -1);
         if (idle_count > 0) {
             int idle_start = ini.Get_Int(Name(), "IdleAnimStart", 0);
             int idle_rate  = ini.Get_Int(Name(), "IdleAnimRate", 4);
             Init_Anim(BSTATE_IDLE, idle_start, idle_count, idle_rate);
+        }
+        int active_count = ini.Get_Int(Name(), "ActiveAnimCount", -1);
+        if (active_count > 0) {
+            int active_start = ini.Get_Int(Name(), "ActiveAnimStart", 0);
+            int active_rate  = ini.Get_Int(Name(), "ActiveAnimRate", 4);
+            Init_Anim(BSTATE_ACTIVE, active_start, active_count, active_rate);
+        }
+        // BSTATE_CONSTRUCTION (buildup) override. Required for mod entries
+        // whose TD-Assets MAKE.ZIP has a different frame count than their
+        // Logic= donor's MAKE.SHP. One_Time() can't auto-init these because
+        // MFCD::Retrieve("TDxxxxMAKE.SHP") returns NULL — the SHP isn't in
+        // REDALERT.MIX. So the donor's BSTATE_CONSTRUCTION is inherited
+        // wholesale, and if the donor has fewer MAKE frames than our actual
+        // TGA pack, the buildup plays only the early frames before snapping
+        // to idle (verified 2026-05-21 on TDTMPL: MSLO donor's ~14-frame
+        // buildup truncated our 35-frame temple assembly to just the
+        // fragment-scatter early phase). BuildupAnimRate convention: ~2
+        // ticks/frame matches Rule.BuildupTime * TICKS_PER_MINUTE / count
+        // for typical 20-35 frame MAKE packs.
+        int buildup_count = ini.Get_Int(Name(), "BuildupAnimCount", -1);
+        if (buildup_count > 0) {
+            int buildup_start = ini.Get_Int(Name(), "BuildupAnimStart", 0);
+            int buildup_rate  = ini.Get_Int(Name(), "BuildupAnimRate", 2);
+            Init_Anim(BSTATE_CONSTRUCTION, buildup_start, buildup_count, buildup_rate);
         }
 
         if (Power < 0) {

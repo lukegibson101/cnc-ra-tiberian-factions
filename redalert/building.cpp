@@ -515,7 +515,15 @@ void BuildingClass::Draw_It(int x, int y, WindowNumberType window) const
         **	instead of compositing the RA Allied roof onto TD's foundation.
         **	Vanilla WEAP / FAKEWEAP keep the original "WEAP2" string.
         */
-        if ((*this == STRUCT_WEAP || *this == STRUCT_FAKEWEAP)) {
+        // Skip the WEAP2 door/roof overlay for TD-prefixed mod entries that
+        // share STRUCT_WEAP via Logic= aliasing but don't actually have a
+        // second-layer structure to composite. TDAFLD (Nod Airstrip) is a
+        // flat 4x2 tile with no roof — drawing TDWEAP2 on top of it plants
+        // the GDI Weapons Factory's yellow roof in the middle of the
+        // airstrip. Future single-piece TD-WEAP-aliased entries should be
+        // added here, or this should migrate to a rules.ini flag.
+        bool skip_warfactory_overlay = (stricmp(Class->IniName, "TDAFLD") == 0);
+        if ((*this == STRUCT_WEAP || *this == STRUCT_FAKEWEAP) && !skip_warfactory_overlay) {
             int shapenum = Door_Stage();
             if (Health_Ratio() <= Rule.ConditionYellow)
                 shapenum += 4;
@@ -5970,7 +5978,18 @@ void BuildingClass::Charging_AI(void)
                 if (IsCharging) {
                     //					if (stagechange) {
                     Mark(MARK_CHANGE);
-                    if (Fetch_Stage() >= 9) {
+                    // Use the Class's actual BSTATE_ACTIVE count instead of
+                    // RA's hardcoded 9. TDOBLI overrides ACTIVE to (0,4,15)
+                    // to match TD-Assets's 4-frame charge sequence (frames
+                    // 4-7 are damaged variants, not extra charge stages).
+                    // With the old "Fetch_Stage() >= 9" check, IsCharged
+                    // never fires for shorter cycles → Fetch_Stage keeps
+                    // climbing and shapenum = Fetch_Stage() walks into the
+                    // damaged-frame range, making the obelisk visually
+                    // "damaged" during charge-up.
+                    int charge_complete_stage = Class->Anims[BSTATE_ACTIVE].Count - 1;
+                    if (charge_complete_stage < 1) charge_complete_stage = 9;  // safety fallback
+                    if (Fetch_Stage() >= charge_complete_stage) {
                         IsCharged = true;
                         IsCharging = false;
                         Set_Rate(0);

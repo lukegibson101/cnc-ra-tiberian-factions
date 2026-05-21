@@ -894,14 +894,19 @@ extern "C" __declspec(dllexport) bool __cdecl CNC_Set_Multiplayer_Data(int scena
         strncpy(who->Name, player_info.Name, MPLAYER_NAME_MAX);
         who->Name[MPLAYER_NAME_MAX - 1] = 0; // Make sure it's terminated
 
-        // Tiberian Factions mod: hijack the France country slot to play as GDI.
-        // The closed-source Remastered launcher only exposes RA's country list
-        // in its picker UI; we route the France selection to HOUSE_GOOD (now
-        // detached from HOUSEF_ALLIES — see defines.h) so the player gets the
-        // GDI faction. The launcher still displays "France" in the radar /
-        // player list; that's a cosmetic limitation we accept for v0.2.
-        if (player_info.House == HOUSE_FRANCE) {
+        // Tiberian Factions mod: hijack two of the orphaned country slots so the
+        // closed-source Remastered country picker can route to HOUSE_GOOD / HOUSE_BAD.
+        // Spain is fully orphaned (no scs* campaign files ship; only used as enum-
+        // iteration lower bound). Turkey's hidden +10% build-speed bonus
+        // (techno.cpp Time_To_Build) gates on ActLike==HOUSE_TURKEY, which is no
+        // longer true after this reassignment. France stays vanilla (Phase Tank).
+        // Cosmetic relabel of TXT_SPAIN / TXT_TURKEY → "GDI" / "Nod" handled in
+        // the mod's string-table overrides.
+        if (player_info.House == HOUSE_SPAIN) {
             player_info.House = HOUSE_GOOD;
+        }
+        if (player_info.House == HOUSE_TURKEY) {
+            player_info.House = HOUSE_BAD;
         }
 
         who->Player.House = (HousesType)player_info.House;
@@ -963,13 +968,13 @@ extern "C" __declspec(dllexport) bool __cdecl CNC_Set_Multiplayer_Data(int scena
                     HOUSEF_GDI,
                     HOUSEF_NOD);
             fprintf(fp,
-                    "Houses: HOUSE_USSR=%d HOUSE_FRANCE=%d HOUSE_GOOD=%d HOUSE_BAD=%d (so 1<<HOUSE_GOOD=0x%08x)\n",
+                    "Houses: HOUSE_USSR=%d HOUSE_SPAIN=%d HOUSE_TURKEY=%d HOUSE_GOOD=%d HOUSE_BAD=%d\n",
                     (int)HOUSE_USSR,
-                    (int)HOUSE_FRANCE,
+                    (int)HOUSE_SPAIN,
+                    (int)HOUSE_TURKEY,
                     (int)HOUSE_GOOD,
-                    (int)HOUSE_BAD,
-                    (1L << HOUSE_GOOD));
-            fprintf(fp, "\nPlayers (num=%d, after France->HOUSE_GOOD swap):\n", num_players);
+                    (int)HOUSE_BAD);
+            fprintf(fp, "\nPlayers (num=%d, after Spain->HOUSE_GOOD / Turkey->HOUSE_BAD swap):\n", num_players);
             for (int pi = 0; pi < num_players; pi++) {
                 fprintf(fp, "  [%d] House=%d Color=%d\n", pi, (int)player_list[pi].House, (int)player_list[pi].ColorIndex);
             }

@@ -1468,4 +1468,52 @@
 		</CNCEncyclopediaComponent>
 	</ObjectTypeClass>
 
+	<ObjectTypeClass Name="RA_TDHAND" Classification="CNCBuildableObject" CanInstantiate="False">
+		<CNCEncyclopediaComponent>
+			<ObjectNameTextID>TEXT_STRUCTURE_TITLE_NOD_HAND_OF_NOD</ObjectNameTextID>
+			<ObjectDescriptionTextID>TEXT_STRUCTURE_DESC_NOD_HAND_OF_NOD</ObjectDescriptionTextID>
+			<BuildIcon>BuildIcon_TD_HandOfNod</BuildIcon>
+		</CNCEncyclopediaComponent>
+	</ObjectTypeClass>
+
+	<ObjectTypeClass Name="RA_TDAFLD" Classification="CNCBuildableObject" CanInstantiate="False">
+		<CNCEncyclopediaComponent>
+			<ObjectNameTextID>TEXT_STRUCTURE_TITLE_NOD_AIRFIELD</ObjectNameTextID>
+			<ObjectDescriptionTextID>TEXT_STRUCTURE_DESC_NOD_AIRFIELD</ObjectDescriptionTextID>
+			<BuildIcon>BuildIcon_TD_Airstrip</BuildIcon>
+		</CNCEncyclopediaComponent>
+	</ObjectTypeClass>
+
+	<ObjectTypeClass Name="RA_TDGUN" Classification="CNCBuildableObject" CanInstantiate="False">
+		<CNCEncyclopediaComponent>
+			<ObjectNameTextID>TEXT_STRUCTURE_TITLE_NOD_TURRET</ObjectNameTextID>
+			<ObjectDescriptionTextID>TEXT_STRUCTURE_DESC_NOD_TURRET</ObjectDescriptionTextID>
+			<BuildIcon>BuildIcon_TD_Turret</BuildIcon>
+		</CNCEncyclopediaComponent>
+	</ObjectTypeClass>
+
+	<ObjectTypeClass Name="RA_TDSAM" Classification="CNCBuildableObject" CanInstantiate="False">
+		<CNCEncyclopediaComponent>
+			<ObjectNameTextID>TEXT_STRUCTURE_TITLE_NOD_SAM_SITE</ObjectNameTextID>
+			<ObjectDescriptionTextID>TEXT_STRUCTURE_DESC_NOD_SAM_SITE</ObjectDescriptionTextID>
+			<BuildIcon>BuildIcon_TD_SamSite</BuildIcon>
+		</CNCEncyclopediaComponent>
+	</ObjectTypeClass>
+
+	<ObjectTypeClass Name="RA_TDOBLI" Classification="CNCBuildableObject" CanInstantiate="False">
+		<CNCEncyclopediaComponent>
+			<ObjectNameTextID>TEXT_STRUCTURE_TITLE_NOD_OBELISK</ObjectNameTextID>
+			<ObjectDescriptionTextID>TEXT_STRUCTURE_DESC_NOD_OBELISK</ObjectDescriptionTextID>
+			<BuildIcon>BuildIcon_TD_Obelisk</BuildIcon>
+		</CNCEncyclopediaComponent>
+	</ObjectTypeClass>
+
+	<ObjectTypeClass Name="RA_TDTMPL" Classification="CNCBuildableObject" CanInstantiate="False">
+		<CNCEncyclopediaComponent>
+			<ObjectNameTextID>TEXT_STRUCTURE_TITLE_NOD_TEMPLE_OF_NOD</ObjectNameTextID>
+			<ObjectDescriptionTextID>TEXT_STRUCTURE_DESC_NOD_TEMPLE_OF_NOD</ObjectDescriptionTextID>
+			<BuildIcon>BuildIcon_TD_TempleOfNod</BuildIcon>
+		</CNCEncyclopediaComponent>
+	</ObjectTypeClass>
+
 </ObjectTypeList>
