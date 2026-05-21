@@ -4280,7 +4280,13 @@ bool AircraftClass::Landing_Takeoff_AI(void)
 bool AircraftClass::Edge_Of_World_AI(void)
 {
     if (!Map.In_Radar(Coord_Cell(Coord))) {
-        if (Mission == MISSION_RETREAT /*|| (*this == AIRCRAFT_CARGO && !Is_Something_Attached())*/) {
+        // Activated the vestigial AIRCRAFT_CARGO branch (was commented out in
+        // the EA port) with our own AIRCRAFT_TDCARGO enum: when a cargo plane
+        // crosses the map edge after dropping its vehicle on the airstrip, it
+        // should despawn cleanly instead of looping back to hunt. Empty TDC17s
+        // exiting east are the expected end-of-delivery state.
+        if (Mission == MISSION_RETREAT
+            || (*this == AIRCRAFT_TDCARGO && !Is_Something_Attached())) {
 
             /*
             **	Check to see if there are any civilians aboard. If so, then flag the house

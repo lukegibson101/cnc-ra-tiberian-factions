@@ -3633,7 +3633,17 @@ bool TechnoClass::Evaluate_Object(ThreatType method,
                 /*
                 **	If firing is possible and legal, then return this action potential.
                 */
-                if (House->IsPlayerControl && (ctrldown || !House->Is_Ally(object))
+                // Cargo planes (AIRCRAFT_TDCARGO) stay non-attackable even
+                // under ctrl-click force-attack — mirrors TD's hardcoded
+                // AIRCRAFT_CARGO exclusion at tiberiandawn/techno.cpp:2646.
+                // Without this guard a *landed* TDC17 on the airstrip would
+                // become force-attackable because the inner Altitude==0
+                // / Height==0 shortcut bypasses IsLegalTarget=false on the
+                // TypeClass. The C17 carries Nod's vehicle delivery, so it
+                // needs to be unconditionally friendly.
+                bool is_cargo_plane = (object->What_Am_I() == RTTI_AIRCRAFT
+                                       && *((AircraftClass*)object) == AIRCRAFT_TDCARGO);
+                if (!is_cargo_plane && House->IsPlayerControl && (ctrldown || !House->Is_Ally(object))
                     && (ctrldown || object->Class_Of().IsLegalTarget
                         || (Rule.IsTreeTarget && object->What_Am_I() == RTTI_TERRAIN))) {
 

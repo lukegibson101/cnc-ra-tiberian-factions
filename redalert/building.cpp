@@ -2152,6 +2152,44 @@ int BuildingClass::Exit_Object(TechnoClass* base)
             break;
 
         case STRUCT_WEAP:
+            // TDAFLD (Nod Airstrip) is Logic=WEAP aliased, so it lands in
+            // this case — but its production flow is fundamentally
+            // different: instead of opening a door and driving the vehicle
+            // out a track, a TDC17 cargo plane flies in from the east map
+            // edge with the vehicle attached, lands on the strip via
+            // MISSION_UNLOAD, drops the unit, and retreats off-map.
+            // Mirrors the reinf.cpp SOURCE_AIR pattern from tiberiandawn.
+            if (strncmp(Class->IniName, "TDAFLD", 6) == 0) {
+                AircraftClass* plane = new AircraftClass(AIRCRAFT_TDCARGO,
+                                                         House->Class->House);
+                if (plane != NULL) {
+                    COORDINATE dock = Docking_Coord();
+                    // Spawn at east map edge, Y-aligned with the docking
+                    // coord so the plane flies due west toward the strip.
+                    // 0x80 lepton (= half-cell) buffer past the visible
+                    // map edge keeps the plane off-screen at spawn.
+                    int border_x = Cell_To_Lepton(Map.MapCellX + Map.MapCellWidth) | 0x80;
+                    COORDINATE spawn = XY_Coord(border_x, Coord_Y(dock));
+                    ScenarioInit++;
+                    if (plane->Unlimbo(spawn, DIR_W)) {
+                        plane->IsALoaner = true;
+                        plane->Attach((FootClass*)base);
+                        plane->Assign_Destination(::As_Target(Coord_Cell(dock)));
+                        plane->Assign_Mission(MISSION_UNLOAD);
+                        plane->Commence();
+                        Assign_Mission(MISSION_UNLOAD);
+                        ScenarioInit--;
+                        return (2);
+                    }
+                    // Spawn failed — clean up the plane and fall through
+                    // so the engine can retry with the existing TDWEAP exit
+                    // path as a fallback rather than wedging the factory.
+                    delete plane;
+                    ScenarioInit--;
+                }
+                // Fallthrough — vehicle drives out the strip directly if
+                // we couldn't spawn the cargo plane for any reason.
+            }
             if (Mission == MISSION_UNLOAD) {
                 for (int index = 0; index < Buildings.Count(); index++) {
                     BuildingClass* bldg = Buildings.Ptr(index);
@@ -3208,6 +3246,14 @@ COORDINATE BuildingClass::Docking_Coord(void) const
         return (Coord_Add(Coord, XYP_COORD(24, 18)));
     }
     if (*this == STRUCT_AIRSTRIP) {
+        return (Coord_Add(Coord, XYP_COORD(ICON_PIXEL_W + ICON_PIXEL_W / 2, 28)));
+    }
+    // TDAFLD is Logic=WEAP aliased, so Type == STRUCT_WEAP — but it has the
+    // same 4x2 footprint as an airstrip and needs the same docking offset
+    // for the TDC17 cargo-plane delivery sequence to land on the strip
+    // visually rather than the building's geometric centre. Match by
+    // IniName so future Logic-aliased airstrip variants can opt in.
+    if (strncmp(Class->IniName, "TDAFLD", 6) == 0) {
         return (Coord_Add(Coord, XYP_COORD(ICON_PIXEL_W + ICON_PIXEL_W / 2, 28)));
     }
     return (TechnoClass::Docking_Coord());
