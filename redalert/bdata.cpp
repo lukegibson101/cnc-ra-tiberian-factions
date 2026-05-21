@@ -563,6 +563,135 @@ static BuildingTypeClass const ClassTesla(STRUCT_TESLA,
 **  entry kicks off, and docs/td-building-separation-recipe.md (in
 **  progress) for the per-building recipe distilled from this work.
 */
+/*
+**  Tiberian Factions mod — M2 Tier 1 buildings (pure data ports).
+**
+**  TDNUKE (GDI/Nod Power Plant) — modeled on ClassPower (POWR), 2x2.
+**  TDNUK2 (GDI/Nod Advanced Power Plant) — modeled on ClassPower, **2x2 not 3x3**.
+**    Vanilla RA's APWR is a 3x3 L-shape; TD's Advanced Power Plant footprint
+**    is the same 2x2 as the basic power plant. We use the POWR base instead
+**    of ClassAdvancedPower to get the correct foundation; rules.ini's
+**    Footprint=NUK2 preset confirms the 2x2 shape.
+**  TDPYLE (GDI Barracks) — modeled on ClassTent (TENT), 2x2 infantry factory.
+**    TENT's exit-coord (24,47) is fine; ExitPyle exit list is shared.
+**  TDSILO (Tiberium Silo) — modeled on ClassStorage (SILO), 2x1 footprint.
+*/
+static BuildingTypeClass const ClassTdNuke(STRUCT_TDNUKE,
+                                           TXT_NONE,        // rules.ini Name= overrides
+                                           "TDNUKE",        // IniName.
+                                           FACING_S,        // Foundation direction.
+                                           XYP_COORD(0, 0), // Exit point (no production).
+                                           REMAP_ALTERNATE,
+                                           0x0000,          // Vertical offset.
+                                           0x0000,          // Primary weapon offset.
+                                           0x0000,          // Primary weapon lateral offset.
+                                           false,           // Fake?
+                                           true,            // Animation rate regulated?
+                                           false,           // Always use given name?
+                                           false,           // Wall?
+                                           true,            // Simple damage imagery?
+                                           false,           // Invisible to radar?
+                                           true,            // Selectable?
+                                           true,            // Legal target?
+                                           false,           // Insignificant?
+                                           false,           // Theater specific?
+                                           false,           // Rotating turret?
+                                           true,            // Color remappable?
+                                           RTTI_NONE,       // Produces.
+                                           DIR_N,           // Starting idle frame.
+                                           BSIZE_22,        // 2x2.
+                                           NULL,            // Exit cell list.
+                                           (short const*)List22,     // OCCUPYLIST.
+                                           (short const*)List22_1100 // OVERLAPLIST.
+);
+
+static BuildingTypeClass const ClassTdNuk2(STRUCT_TDNUK2,
+                                           TXT_NONE,
+                                           "TDNUK2",
+                                           FACING_S,
+                                           XYP_COORD(0, 0),
+                                           REMAP_ALTERNATE,
+                                           0x0000,
+                                           0x0000,
+                                           0x0000,
+                                           false,
+                                           true,
+                                           false,
+                                           false,
+                                           true,
+                                           false,
+                                           true,
+                                           true,
+                                           false,
+                                           false,
+                                           false,
+                                           true,
+                                           RTTI_NONE,
+                                           DIR_N,
+                                           BSIZE_22,        // TD-authentic: 2x2 (not APWR's 3x3).
+                                           NULL,
+                                           (short const*)List22,
+                                           (short const*)List22_1100
+);
+
+static BuildingTypeClass const ClassTdPyle(STRUCT_TDPYLE,
+                                           TXT_NONE,
+                                           "TDPYLE",
+                                           FACING_NONE,
+                                           XYP_COORD(24, 47), // Match TENT.
+                                           REMAP_ALTERNATE,
+                                           0x0000,
+                                           0x0000,
+                                           0x0000,
+                                           false,
+                                           true,
+                                           false,
+                                           false,
+                                           false,
+                                           false,
+                                           true,
+                                           true,
+                                           false,
+                                           false,
+                                           false,
+                                           true,
+                                           RTTI_INFANTRYTYPE, // Infantry factory.
+                                           DIR_N,
+                                           BSIZE_22,
+                                           (short const*)ExitPyle,
+                                           (short const*)List22,
+                                           NULL
+);
+
+static BuildingTypeClass const ClassTdSilo(STRUCT_TDSILO,
+                                           TXT_NONE,
+                                           "TDSILO",
+                                           FACING_NONE,
+                                           XYP_COORD(0, 0),
+                                           REMAP_ALTERNATE,
+                                           0x0000,
+                                           0x0000,
+                                           0x0000,
+                                           false,
+                                           false,
+                                           false,
+                                           false,
+                                           true,
+                                           false,
+                                           true,
+                                           true,
+                                           false,
+                                           false,
+                                           false,
+                                           true,
+                                           RTTI_NONE,
+                                           DIR_N,
+                                           BSIZE_21,        // TD-authentic: 2x1 (matches Footprint=SILO preset).
+                                           NULL,
+                                           (short const*)StoreList,
+                                           (short const*)NULL
+);
+
 static BuildingTypeClass const ClassObelisk(STRUCT_TDOBLI,
                                             TXT_NONE,        // Display name token; rules.ini Name= overrides.
                                             "TDOBLI",        // IniName.
@@ -3057,6 +3186,10 @@ void BuildingTypeClass::Init_Heap(void)
     // exact STRUCT_TD* enum order (per the constraint at the top of this
     // function: heap allocation block index == StructType enum value).
     new BuildingTypeClass(ClassObelisk); // STRUCT_TDOBLI (Nod Obelisk of Light)
+    new BuildingTypeClass(ClassTdNuke);  // STRUCT_TDNUKE  (Power Plant)
+    new BuildingTypeClass(ClassTdNuk2);  // STRUCT_TDNUK2  (Advanced Power Plant)
+    new BuildingTypeClass(ClassTdPyle);  // STRUCT_TDPYLE  (GDI Barracks)
+    new BuildingTypeClass(ClassTdSilo);  // STRUCT_TDSILO  (Tiberium Silo)
 }
 
 /***********************************************************************************************
@@ -3131,6 +3264,14 @@ void BuildingTypeClass::One_Time(void)
         // warmup-then-fire sequencing per TD's original (currently both
         // OBELPOWR + OBELRAY1 trigger on BSTATE_ACTIVE entry).
         {STRUCT_TDOBLI, BSTATE_ACTIVE, 0, 4, 15},
+        // M2 Tier 1 — values lifted verbatim from tiberiandawn/bdata.cpp _anims[].
+        // POWER + ADVANCED_POWER: 4-frame blinking-generator idle at rate 15.
+        // BARRACKS (PYLE in TD): 10-frame cycle on both IDLE and ACTIVE.
+        // STORAGE (SILO): no entry — static sprite.
+        {STRUCT_TDNUKE, BSTATE_IDLE, 0, 4, 15},
+        {STRUCT_TDNUK2, BSTATE_IDLE, 0, 4, 15},
+        {STRUCT_TDPYLE, BSTATE_ACTIVE, 0, 10, 3},
+        {STRUCT_TDPYLE, BSTATE_IDLE, 0, 10, 3},
     };
 
     for (int sindex = STRUCT_FIRST; sindex < STRUCT_COUNT; sindex++) {

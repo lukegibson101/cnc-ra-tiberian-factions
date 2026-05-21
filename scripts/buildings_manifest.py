@@ -75,7 +75,8 @@ License: GPL v3 (inherited from Vanilla Conquer base).
 
 TDNUKE = {
     "ininame":     "TDNUKE",
-    "logic":       "POWR",
+    # MIGRATED to STRUCT_TDNUKE in bdata.cpp Init_Heap (M2 Tier 1, 2026-05-21).
+    "logic":       None,
     "td_asset":       "NUKE",
     "footprint":   "NUKE",
     "shape_size":  (48, 48),
@@ -106,7 +107,8 @@ TDNUKE = {
 
 TDNUK2 = {
     "ininame":     "TDNUK2",
-    "logic":       "APWR",
+    # MIGRATED to STRUCT_TDNUK2 in bdata.cpp Init_Heap (M2 Tier 1, 2026-05-21).
+    "logic":       None,
     "td_asset":       "NUK2",
     "footprint":   "NUK2",
     "shape_size":  (48, 48),
@@ -206,7 +208,8 @@ TDPROC = {
 
 TDSILO = {
     "ininame":     "TDSILO",
-    "logic":       "SILO",
+    # MIGRATED to STRUCT_TDSILO in bdata.cpp Init_Heap (M2 Tier 1, 2026-05-21).
+    "logic":       None,
     "td_asset":    "SILO",
     # RA SILO donor is BSIZE_11 (1×1) which made TDSILO render 1×1; override to
     # TD-authentic BSIZE_21 via the SILO preset. Bib=yes adds the extra row
@@ -500,7 +503,8 @@ TDFACT = {
 
 TDPYLE = {
     "ininame":     "TDPYLE",
-    "logic":       "TENT",
+    # MIGRATED to STRUCT_TDPYLE in bdata.cpp Init_Heap (M2 Tier 1, 2026-05-21).
+    "logic":       None,
     "td_asset":       "PYLE",
     "footprint":   "PYLE",
     "shape_size":  (48, 48),

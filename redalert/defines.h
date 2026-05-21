@@ -1465,9 +1465,14 @@ typedef enum StructType : char
     // committed strategic direction (2026-05-21).
     //
     // First vertical slice: STRUCT_TDOBLI (Nod Obelisk of Light).
-    // Subsequent buildings (TDATWR, TDGUN, TDPYLE, TDNUKE, TDPROC, etc.)
-    // land per-tier in the building-separation milestones.
+    // Subsequent buildings (TDATWR, TDGUN, TDPROC, etc.) land per-tier
+    // in the building-separation milestones.
     STRUCT_TDOBLI,
+    // M2 Tier 1 — pure data ports (power plants, GDI barracks, ore silo).
+    STRUCT_TDNUKE,
+    STRUCT_TDNUK2,
+    STRUCT_TDPYLE,
+    STRUCT_TDSILO,
 
     STRUCT_COUNT,
     STRUCT_FIRST = 0
