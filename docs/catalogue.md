@@ -105,78 +105,46 @@ Other:
 - `tf_weap_unlimbo.log` (TDWEAP Mission_Unload Force_Track capture)
 - `tf_weap_track.log` (per-tick Coord during Track13 — voluminous; consider disabling under `#if 0` if log volume becomes a problem)
 
-### Building bugs found during 2026-05-20 playtest (parked for next session)
+### Building bugs found during 2026-05-20 playtest (deferred to separation milestones)
 
-User playtest after the GDI roster shipped surfaced these — bundled into a
-"next session" list rather than fixed inline so we can close this session
-cleanly. All are GDI building issues (harvester behaviour, powers etc. are
-deferred until the unit catalogue work). Numbers match the user's report:
+User playtest after the GDI roster shipped surfaced these. **Both remaining
+items now defer to the building-separation work** (`docs/building-separation-plan.md`)
+rather than being patched against the Logic= alias model — targeted fixes
+would just be thrown away when the alias is removed. Numbers match the
+user's report:
 
-1. **TDPROC / TDSILO storage values 10× too high.** Currently TDPROC stores
-   20000, TDSILO 15000. User reports they should be 2000 and 1500. Check the
-   rules.ini emit — our manifest has `storage: 1000` / `storage: 1500`
-   respectively but `Storage=` is being emitted with an extra zero somewhere.
-   Suspect: NightFalcon101's MODERATE_WARFARE patches in vanilla RA rules.ini
-   bumped storage 10×; our manifest emit may be inheriting that base. Search
-   `Storage=15000` / `Storage=20000` in rules.ini and trace.
-
-2. **TDPROC idle animation breaks after first harvester return.** Refinery
+1. **TDPROC idle animation breaks after first harvester return.** Refinery
    animates normally on build. When the harvester returns and docks, the
    `IdleAnim` cycle stops and never restarts. Likely the donor's BSTATE
    transitions (`BSTATE_ACTIVE`/`BSTATE_AUX1` siphoning cycles in TD's source
    per `tiberiandawn/bdata.cpp:3814`) take over and our `IdleAnim*` override
    never re-engages. Also (parked): there should be a *visible* "returning"
    indicator on TDPROC when a harvester is on its way back, so the player
-   knows ore is incoming.
+   knows ore is incoming. **Resolution path:** building-separation **M4**
+   (Tier 3 economy buildings) — TDPROC becomes a STRUCT_TDPROC entry with
+   its own `_anims[]` including BSTATE_DOCKING from TD source. Supersedes
+   [[project-td-harvester-dock-plan]].
 
-3. **TDSILO renders with a 1×1 placement grid, should be 2×2.** Our manifest
-   has `shape_size: (48, 24)` (2 wide × 1 tall) but no `footprint` override,
-   so it inherits the RA SILO donor's BSIZE_21 footprint. TD-authentic is
-   2×2. Needs both a new `SILO` Footprint= preset in `bdata.cpp` (BSIZE_22
-   with appropriate occupy/overlap lists) AND `shape_size: (48, 48)` in the
-   manifest so the launcher renders the sprite at the correct 2-cell-tall
-   scale. Cross-check against TD's source `tiberiandawn/bdata.cpp` ClassSilo
-   for the authentic ListSilo / OListSilo cell pattern.
-
-4. **TDEYE renders no on-map sprite + has a 2×2 placement grid, should be
-   L-shape (top-row overlap + bottom-row occupy, like NUK2).** Two bugs:
-   (a) sprite invisibility — TDEYE.ZIP is bundled and tileset XML wired
-   (verified during deploy), so the rendering failure is engine-side. Check
-   if the Logic=MSLO donor's `ImageData` inheritance produces something the
-   launcher can't resolve (similar to gotcha #1 IniName collisions class).
-   (b) footprint — Logic=MSLO inherits BSIZE_21 (2×1 missile silo), not the
-   2×2 L-shape TD's EYE actually has. Needs a new `EYE` preset in bdata.cpp
-   matching NUK2's `List_NUK2_OCCUPY` / `List_NUK2_OVERLAP` pattern.
-
-5. **TDGTWR and TDATWR have no weapons.** Towers exist on the map but don't
-   fire. Logic=PBOX and Logic=AGUN donors do have weapons in their
-   constructors, but the Logic= alias may not be copying `PrimaryWeapon` /
-   `SecondaryWeapon` pointers. Quick fix: explicitly set `primary=` in the
-   TDGTWR / TDATWR manifest entries (matching docs/catalogue.md's weapon-port
-   placeholder table — Vulcan for GTWR, TurretGun+Nike for ATWR). If that
-   doesn't take effect, the deeper issue is `BuildingTypeClass::Read_INI`'s
-   weapon-pointer lookup vs. our Logic= ImageData inheritance path.
-
-6. **TDTMPL construction animation feels slow then pops into place.** (Raised
+2. **TDTMPL construction animation feels slow then pops into place.** (Raised
    2026-05-21 — Luke not happy post v0.3.1-phase1b.) Symptom: buildup plays
    visibly slowly, then the finished Temple sprite snaps in before the
-   animation has cycled through all frames. Either the rate is too slow and
-   later frames get cut off when the engine ends BSTATE_CONSTRUCTION, or
-   frames are missing from the tileset. **Lead:** phase1b hardcodes
+   animation has cycled through all frames. Root cause: phase1b hardcodes
    `rate=2 ticks/frame` for every entry — for TDTMPL's 36-frame buildup
    that's ~4.8s, while the engine's natural rate is
    `(Rule.BuildupTime × TICKS_PER_MINUTE) / count` ≈ 1.5 ticks/frame
    (~2.4s). Once the engine's timer expires it force-transitions to idle
-   regardless of animation progress, which matches the "pops into place"
-   symptom. Fix candidates, in order: (a) replace the hardcoded `rate=2`
-   in `scripts/add_building.py` with the engine-matched formula
-   `max(1, round(BuildupTime_ticks / count))`; (b) per-entry override
-   `buildup_anim=(0,36,1)` in `scripts/buildings_manifest.py` for TDTMPL
-   only as a stopgap; (c) verify TDTMPLMAKE.ZIP actually contains 35 TGAs
-   (`unzip -l ...TDTMPLMAKE.ZIP | grep -c .tga`) — if fewer, the auto-derive
-   over-counted. Cross-reference TDNUKE/TDFACT buildups which land
-   correctly — both have lower frame counts (19, 32) so their `rate=2`
-   total durations stay inside the engine's BuildupTime budget.
+   regardless of animation progress. **Resolution path:** building-separation
+   **M5** (Tier 4 superweapon hosts) — STRUCT_TDTMPL owns its own buildup
+   rate via the BuildingTypeClass instance, fed from TD's authentic value
+   rather than the manifest's blanket rate=2.
+
+### TDGUN turret rotation — deferred to separation M3
+
+TDGUN fires statically instead of rotating to face targets. Symptom of
+Logic=GUN donor's `BuildingClass::Draw_It` turret-draw path not firing for
+our mod entry. **Resolution path:** building-separation **M3** (Tier 2
+defensive turrets) — TDGUN becomes STRUCT_TDGUN with its own turret-facing
+logic ported from `tiberiandawn/building.cpp` `Draw_It`.
 
 **Immediate next work — finish GDI building roster:**
 
@@ -230,7 +198,7 @@ Reilsss's CnCinRA mod gave up on this and reused the GDI weapons factory for Nod
 **Deferred architectural items still parked:**
 - D1.2 Phase 2 — delete BScan/ActiveBScan/OldBScan, migrate all consumers. See task `#8`.
 - Classic-mode TD SHPs — bundle CONQUER.MIX assets into a mod mixfile for LAN play. See ImageData inheritance note in this file.
-- HOUSE_BAD launcher swap — France→HOUSE_GOOD is wired (dllinterface.cpp:899), but Nod has no equivalent. Probably USSR→HOUSE_BAD or Germany→HOUSE_BAD as the next paired swap.
+- ~~HOUSE_BAD launcher swap~~ — **DONE.** Spain→HOUSE_GOOD (GDI) and Turkey→HOUSE_BAD (Nod) both wired in `dllinterface.cpp:905-910`.
 
 ### End of 2026-05-19 — Pre-pipeline state (archived)
 
