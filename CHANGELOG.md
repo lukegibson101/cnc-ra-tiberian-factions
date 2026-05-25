@@ -6,6 +6,19 @@ This project follows a `version_high.version_low.patch` scheme matching the `ccm
 
 ## [Unreleased]
 
+### TDSAM full TD port — 8-state launcher (M3 Tier 2 complete)
+
+- `STRUCT_TDSAM` fully separated per `docs/td-sam-deep-dive.md`. Wholesale port of TD's SAM Site: dedicated `TdSamState` enum, verbatim 8-state `Mission_Attack` (UNDERGROUND → RISING → READY → FIRING → READY2 → FIRING2 → LOCKING → LOWERING), Status-aware `Shape_Number` (rise/lower frames vs rotating turret frames), underground half-damage, ROT=15 launcher rotation.
+- `[TDNike]` weapon: Damage=50, ROF=50, Range=7.5, Warhead=AP, Report=ROCKET2, Anim=SAMFIRE (TD's `WEAPON_NIKE`). Distinct from RA's `[Nike]` (RA has ROF=20 + Report=MISSILE1).
+- `[TDPatriot]` projectile: Image=MISSILE, Homing=yes, ROT=10, AA-only, MPH_VERY_FAST, Warhead=AP, ImpactAnim=VEH-HIT1 (TD's `BULLET_SAM` / `ClassPatriot`). Distinct from RA's `[AAMissile]` (RA's is Translucent + non-homing + ROT=20).
+- `BuildingClass::Greatest_Threat` TD-verbatim branch for STRUCT_TDSAM — scans `THREAT_AREA | THREAT_AIR` (~2× weapon range), enabling early aircraft acquisition so the ~2-second rise completes before the target leaves arc.
+- Engine registration: `WEAPON_TDNIKE` + `BULLET_TDPATRIOT` enums, `new WeaponTypeClass("TDNike")` (IsTDPort=true) + `new BulletTypeClass("TDPatriot")` (IsTDPort=true).
+- Closes M3 Tier 2 defensive turrets — TDATWR / TDGTWR / TDGUN / TDOBLI / TDSAM all smoke-verified on Deck. Plus TDSILO from Tier 1.
+
+### Playbook §3.1 — extreme-case Speed= symptom documented
+
+The TDSAM smoke surfaced a much harsher presentation of the IsTDPort/Speed= trap than the docs covered. When the intended raw value is 100 (MPH_VERY_FAST) and IsTDPort is unset, the percentage-parse pushes MaxSpeed to MPH_LIGHT_SPEED=255, which then triggers the `if (speed == MPH_LIGHT_SPEED) speed = MPH_IMMOBILE;` swap in `Unlimbo_TD`. The bullet sits at the launcher, the AA-distance damage branch is skipped, and the impact anim plays on top of the firer — looks like a rendering or warhead bug; is actually a Speed= bug. Documented in `docs/td-port-playbook.md` §3.1.
+
 ## [0.4.2] — 2026-05-22 — TDGTWR weapon port + TD-port bullet hardening
 
 GDI Guard Tower now fires the TD-authentic chain gun instead of leaking RA's stronger `[Vulcan]` into the build. Bundles a critical fix for TD-port bullet damage that was silently zeroing TDOBLI and TDGUN hits.

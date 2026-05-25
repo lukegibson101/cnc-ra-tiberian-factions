@@ -934,7 +934,7 @@ See [[project-td-build-time-formula]] for full derivation.
 | TDNUKE | both | POWR | ✓ | ✅ manual ref impl 2026-05-19 |
 | TDNUK2 | both | APWR | ✓ | ✅ (Phase-1 POC) → 📝 migrate to TD-authentic |
 | TDPROC | both | PROC | ✓ | 📝 |
-| TDSILO | both | SILO | ✓ | 📝 |
+| TDSILO | both | SILO | ✓ | ✅ M2 Tier 1 separated + smoke-verified 2026-05-25 |
 | TDPYLE | GDI | TENT | ✓ | 📝 |
 | TDHAND | Nod | BARR | ✓ | 📝 |
 | TDHPAD | both | HPAD | ✓ | 📝 |
@@ -944,11 +944,11 @@ See [[project-td-build-time-formula]] for full derivation.
 | TDEYE | GDI | MSLO | ✓ | 📝 🚧 (Ion Cannon visual v0.4) |
 | TDTMPL | Nod | MSLO | ✓ | 📝 🚧 |
 | TDFIX | both | FIX | ✓ | 📝 |
-| TDGTWR | GDI | PBOX | ✓ | 📝 |
-| TDATWR | GDI | AGUN | ✓ | 📝 |
-| TDOBLI | Nod | TSLA | ✓ | 📝 |
-| TDGUN | Nod | GUN | ✓ | 📝 |
-| TDSAM | Nod | SAM | ✓ | 📝 |
+| TDGTWR | GDI | PBOX | ✓ | ✅ M3 Tier 2 separated, chain gun port v0.4.2 |
+| TDATWR | GDI | AGUN | ✓ | ✅ M3 Tier 2 separated, TDTowTwo + TDSSM port |
+| TDOBLI | Nod | TSLA | ✓ | ✅ M3 Tier 2 separated, laser-line + charge state v0.4.1 |
+| TDGUN | Nod | GUN | ✓ | ✅ M3 Tier 2 separated, TDAPDS damage fix v0.4.2 |
+| TDSAM | Nod | SAM | ✓ | ✅ M3 Tier 2 separated, 8-state launcher 2026-05-25 |
 | TDFACT | both | FACT | ✓ | ✅ v0.3.0-phase5e (per-faction split deferred to v0.4) |
 | TDMCV | GoodGuy only | MCV (unit) | — | ✅ v0.3.0-phase5e (Nod TDNODMCV deferred to v0.4) |
 | HOSP/BIO/ARCO | — | — | — | skip for v0.3 |

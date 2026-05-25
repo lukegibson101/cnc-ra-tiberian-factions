@@ -1,6 +1,6 @@
 # Session handoff — TD-source verification pass (2026-05-22)
 
-**Status as of 2026-05-23:** Cargo 1-7 shipped (commits `593a975`, `381045b`, v0.4.2 cut at `1c229a2`, plus M2 Tier 1 stat/dispatch work). Only TDSAM remains.
+**Status as of 2026-05-25:** **CLOSED.** All cargo shipped — TDSAM port (commit `b267742`) + smoke fixes (commit `18b39b4`) landed 2026-05-25, completing M3 Tier 2.
 
 ---
 
@@ -12,20 +12,14 @@
 | `docs/td-obli-verification.md` | TDOBLI | Verification ✅ shipped |
 | `docs/td-gtwr-gun-verification.md` | TDGTWR, TDGUN | Verification ✅ shipped |
 | `docs/td-atwr-deep-dive.md` | TDATWR | Deep dive ✅ shipped |
-| `docs/td-sam-deep-dive.md` | TDSAM | Deep dive — **pending** |
+| `docs/td-sam-deep-dive.md` | TDSAM | Deep dive ✅ shipped (commits `b267742`, `18b39b4`) |
 
 ---
 
-## Remaining cargo
+## Resolved during TDSAM implementation
 
-**TDSAM full port** (`td-sam-deep-dive.md` M1-M8). Biggest scope: dedicated `TdSamState` enum, port TD's 8-state Mission_Attack verbatim, Status-aware Shape_Number, `[TDNike]` + `[TDPatriot]` weapon/projectile, de-aliasing pass. **3-6 hours** + MP smoke (needs 2-Deck Tailscale setup).
-
----
-
-## Open verifications during implementation (TDSAM only)
-
-- **TDSAM `[TDPatriot]` `Speed=`** — what RA integer corresponds to TD's `MPH_VERY_FAST` for BULLET_SAM.
-- **TDSAM `[TDPatriot]` `Homing=yes`** — confirm that's RA's rules.ini field name for `BulletTypeClass::IsHoming`.
+- **`[TDPatriot]` `Speed=`** — TD's `MPH_VERY_FAST` = raw MPHType 100. `Speed=100` in rules.ini works when the **weapon** ([TDNike]) is flagged `IsTDPort=true` so the value parses as raw MPHType (TD source convention) rather than RA's 0-100 percentage. Without the flag, `Speed=100` becomes MPH_LIGHT_SPEED, triggers the bullet.cpp:1022 `speed = MPH_IMMOBILE` swap, and the missile fails to move. Documented in `docs/td-port-playbook.md` §3.1 (extreme case).
+- **`[TDPatriot]` `Homing=yes`** — confirmed; `BulletTypeClass::Read_INI` (bbdata.cpp:344) reads `"Homing"` into `IsHoming`.
 
 ---
 
