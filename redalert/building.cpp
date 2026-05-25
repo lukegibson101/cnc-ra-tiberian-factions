@@ -1116,7 +1116,8 @@ void BuildingClass::AI(void)
     ** radar jammer. STRUCT_SAM/STRUCT_TDSAM aliased intentionally — both
     ** are jammable by identical rules (per docs/td-sam-deep-dive.md M6).
     */
-    if ((*this == STRUCT_RADAR || *this == STRUCT_SAM || *this == STRUCT_TDSAM) && (Frame % TICKS_PER_SECOND) == 0) {
+    if ((*this == STRUCT_RADAR || *this == STRUCT_TDHQ || *this == STRUCT_SAM || *this == STRUCT_TDSAM)
+        && (Frame % TICKS_PER_SECOND) == 0) {
         IsJammed = false;
         for (int index = 0; index < Units.Count(); index++) {
             UnitClass* obj = Units.Ptr(index);
@@ -1230,6 +1231,14 @@ bool BuildingClass::Unlimbo(COORDINATE coord, DirType dir)
         if (btype < 32) {
             House->BScan |= (1L << btype);
             House->ActiveBScan |= (1L << btype);
+        }
+        // Tiberian Factions: STRUCT_TDHQ acts as a radar dome — also
+        // contribute STRUCTF_RADAR so HouseClass::AI's radar activation
+        // (~house.cpp:1502) sees it. Heap types past 31 can't represent
+        // themselves in BScan; we shadow the closest vanilla bit instead.
+        if (btype == STRUCT_TDHQ) {
+            House->BScan |= STRUCTF_RADAR;
+            House->ActiveBScan |= STRUCTF_RADAR;
         }
         House->Active_Building_Add(btype);
 
@@ -1476,7 +1485,7 @@ ResultType BuildingClass::Take_Damage(int& damage, int distance, WarheadType war
             if (SpiedBy) {
                 SpiedBy = 0;
                 StructType struc = *this;
-                if (struc == STRUCT_RADAR /* || struc == STRUCT_EYE */) {
+                if (struc == STRUCT_RADAR || struc == STRUCT_TDHQ /* || struc == STRUCT_EYE */) {
                     Update_Radar_Spied();
                 }
             }
@@ -3675,7 +3684,7 @@ bool BuildingClass::Captured(HouseClass* newowner)
         */
         if (SpiedBy & (1 << (newowner->Class->House))) {
             SpiedBy -= (1 << (newowner->Class->House));
-            if (*this == STRUCT_RADAR) {
+            if (*this == STRUCT_RADAR || *this == STRUCT_TDHQ) {
                 Update_Radar_Spied();
             }
         }
@@ -6033,7 +6042,7 @@ void BuildingClass::Update_Radar_Spied(void)
     for (int index = 0; index < Buildings.Count(); index++) {
         BuildingClass* obj = Buildings.Ptr(index);
         if (obj && !obj->IsInLimbo && obj->House == House) {
-            if (*obj == STRUCT_RADAR /* || *obj == STRUCT_EYE */) {
+            if (*obj == STRUCT_RADAR || *obj == STRUCT_TDHQ /* || *obj == STRUCT_EYE */) {
                 House->RadarSpied |= obj->Spied_By();
             }
         }

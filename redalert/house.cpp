@@ -1014,6 +1014,7 @@ bool HouseClass::Can_Build(ObjectTypeClass const* type, HousesType house) const
             static int tdweap_type = -2;
             static int tdafld_type = -2;
             static int tdhpad_type = -2;
+            static int tdhq_type   = -2;
             if (tdpyle_type == -2) {
                 BuildingTypeClass const* p = BuildingTypeClass::As_Pointer("TDPYLE");
                 tdpyle_type = p ? p->Type : -1;
@@ -1033,6 +1034,10 @@ bool HouseClass::Can_Build(ObjectTypeClass const* type, HousesType house) const
             if (tdhpad_type == -2) {
                 BuildingTypeClass const* p = BuildingTypeClass::As_Pointer("TDHPAD");
                 tdhpad_type = p ? p->Type : -1;
+            }
+            if (tdhq_type == -2) {
+                BuildingTypeClass const* p = BuildingTypeClass::As_Pointer("TDHQ");
+                tdhq_type = p ? p->Type : -1;
             }
             if (t == STRUCT_TENT && tdpyle_type >= 0 && Has_Building_Active(tdpyle_type))
                 continue;
@@ -1064,6 +1069,13 @@ bool HouseClass::Can_Build(ObjectTypeClass const* type, HousesType house) const
             // in the sidebar because the prereq check rejects them.
             if (t == STRUCT_HELIPAD) {
                 if (tdhpad_type >= 0 && Has_Building_Active(tdhpad_type))
+                    continue;
+            }
+            // STRUCT_RADAR — satisfied by TDHQ (separated TD Communications
+            // Center). RA structures keyed to Prerequisite=dome (Chronosphere,
+            // Iron Curtain, etc.) become buildable when only TDHQ is owned.
+            if (t == STRUCT_RADAR) {
+                if (tdhq_type >= 0 && Has_Building_Active(tdhq_type))
                     continue;
             }
         }
@@ -1480,7 +1492,7 @@ void HouseClass::AI(void)
 #else
                 if (building && building->House == PlayerPtr) {
 #endif
-                    if (*building == STRUCT_RADAR /* || *building == STRUCT_EYE */) {
+                    if (*building == STRUCT_RADAR || *building == STRUCT_TDHQ /* || *building == STRUCT_EYE */) {
                         if (!building->IsJammed) {
                             jammed = false;
                             break;
@@ -7228,12 +7240,23 @@ void HouseClass::Recalc_Attributes(void)
         if (btype < 32) {
             building->House->BScan |= (1L << btype);
         }
+        // Tiberian Factions: STRUCT_TDHQ shadows STRUCTF_RADAR so the
+        // recomputed bitmask still satisfies the radar-activation tests
+        // at house.cpp:1502+. Mirrors the Unlimbo-time shadow in
+        // BuildingClass::Unlimbo (~building.cpp:1228).
+        if (btype == STRUCT_TDHQ) {
+            building->House->BScan |= STRUCTF_RADAR;
+        }
         if (building->IsLocked
             && (Session.Type != GAME_NORMAL || !building->House->IsHuman || building->IsDiscoveredByPlayer)) {
             if (!building->IsInLimbo) {
                 if (btype < 32) {
                     building->House->ActiveBScan |= (1L << btype);
                     building->House->OldBScan |= (1L << btype);
+                }
+                if (btype == STRUCT_TDHQ) {
+                    building->House->ActiveBScan |= STRUCTF_RADAR;
+                    building->House->OldBScan |= STRUCTF_RADAR;
                 }
                 if (btype >= 0 && btype < MAX_BUILDING_TYPES) {
                     building->House->ActiveBQuantity[btype]++;

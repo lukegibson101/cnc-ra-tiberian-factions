@@ -140,7 +140,8 @@ TDNUK2 = {
 
 TDHQ = {
     "ininame":     "TDHQ",
-    "logic":       "DOME",
+    # MIGRATED to STRUCT_TDHQ in bdata.cpp Init_Heap (M4 Tier 3, 2026-05-26).
+    "logic":       None,
     "td_asset":    "HQ",
     "footprint":   "HQ",
     "shape_size":  (48, 48),
@@ -168,7 +169,7 @@ TDHQ = {
     "repairable":  True,
     "bib":         True,
     "idle_anim":   (0, 16, 4),
-    "notes":       "TD Comm Center / Radar. Shared GDI+Nod (TD didn't differentiate visually). Sensors=yes is the radar reveal + cloak-detect flag. First entry exercising the new Sensors= manifest field.",
+    "notes":       "TD Comm Center / Radar. STRUCT_TDHQ with own BuildingTypeClass (ClassTdHq) modeled on TD's ClassCommand. Non-factory (ToBuild=RTTI_NONE), BSIZE_22 (ComList+OComList), ARMOR_WOOD, Sight=10, Power=-40, Strength=500. Radar/minimap activation: BuildingClass::Unlimbo + HouseClass recompute shadow STRUCTF_RADAR for STRUCT_TDHQ so the existing ActiveBScan & STRUCTF_RADAR tests at house.cpp:1502+ activate the minimap. Prereq equivalence in house.cpp lets RA buildings keyed to Prerequisite=dome (Chronosphere/Iron Curtain/etc.) build off a TDHQ. Shared GDI+Nod (TD didn't differentiate visually). Classic SHP ships via TFASSETS.MIX (TDHQ.SHP + TDHQMAKE.SHP).",
 }
 
 

@@ -1485,6 +1485,7 @@ typedef enum StructType : char
     STRUCT_TDHAND,
     STRUCT_TDHPAD,
     STRUCT_TDFIX,
+    STRUCT_TDHQ,
 
     STRUCT_COUNT,
     STRUCT_FIRST = 0

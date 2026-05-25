@@ -970,6 +970,45 @@ static BuildingTypeClass const ClassTdFix(STRUCT_TDFIX,
                                           (short const*)OListFix
 );
 
+/*
+**  TDHQ (Communications Center / Radar) — 2×2 radar dome, ARMOR_WOOD,
+**    capturable, crewed. Wholesale port of TD's STRUCT_RADAR per
+**    tiberiandawn/bdata.cpp:739 (ClassCommand). Not a factory
+**    (ToBuild=RTTI_NONE); provides minimap + reveals cloaked units
+**    (cloak-detection handled via the BScan STRUCTF_RADAR equivalence
+**    set in BuildingClass::Unlimbo). Sight=10 (largest in the catalogue
+**    after Comms-tier buildings). Reuses RA's ComList + OComList — same
+**    foundation pattern as TD's HQ.
+*/
+static BuildingTypeClass const ClassTdHq(STRUCT_TDHQ,
+                                         TXT_NONE,           // Display name (rules.ini Name= overrides).
+                                         "TDHQ",             // IniName.
+                                         FACING_NONE,        // Foundation direction.
+                                         XYP_COORD(0, 0),    // No produced-unit exit.
+                                         REMAP_ALTERNATE,    // Sidebar remap logic.
+                                         0x0000,             // Vertical offset.
+                                         0x0000,             // Primary weapon offset.
+                                         0x0000,             // Primary weapon lateral offset.
+                                         false,              // Is this building a fake?
+                                         true,               // Animation rate regulated for constant speed?
+                                         false,              // Always use the given name?
+                                         false,              // Is this a wall type structure?
+                                         false,              // Simple (one frame) damage imagery?
+                                         false,              // Is it invisible to radar?
+                                         true,               // Can the player select this?
+                                         true,               // Is this a legal target?
+                                         false,              // Is this an insignificant building?
+                                         false,              // Theater specific graphic image?
+                                         false,              // Does it have a rotating turret?
+                                         true,               // Can the building be color remapped?
+                                         RTTI_NONE,          // Not a factory.
+                                         DIR_N,              // Starting idle frame.
+                                         BSIZE_22,           // 2x2 footprint (TD-authentic).
+                                         NULL,               // No preferred exit cell.
+                                         (short const*)ComList,
+                                         (short const*)OComList
+);
+
 static BuildingTypeClass const ClassObelisk(STRUCT_TDOBLI,
                                             TXT_NONE,        // Display name token; rules.ini Name= overrides.
                                             "TDOBLI",        // IniName.
@@ -3475,6 +3514,7 @@ void BuildingTypeClass::Init_Heap(void)
     new BuildingTypeClass(ClassTdHand);  // STRUCT_TDHAND  (Hand of Nod)
     new BuildingTypeClass(ClassTdHpad);  // STRUCT_TDHPAD  (Helipad)
     new BuildingTypeClass(ClassTdFix);   // STRUCT_TDFIX   (Service Depot)
+    new BuildingTypeClass(ClassTdHq);    // STRUCT_TDHQ    (Communications Center)
 }
 
 /***********************************************************************************************
@@ -3565,6 +3605,9 @@ void BuildingTypeClass::One_Time(void)
         // tiberiandawn/bdata.cpp:3806-3807).
         {STRUCT_TDFIX, BSTATE_ACTIVE, 0, 7, 2},
         {STRUCT_TDFIX, BSTATE_IDLE, 0, 1, 0},
+        // M4 Tier 3 — TDHQ radar-dish rotation (TD-authentic per
+        // tiberiandawn/bdata.cpp:3800).
+        {STRUCT_TDHQ, BSTATE_IDLE, 0, 16, 4},
     };
 
     for (int sindex = STRUCT_FIRST; sindex < STRUCT_COUNT; sindex++) {
