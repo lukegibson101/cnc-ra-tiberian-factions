@@ -110,6 +110,23 @@ static short const ListFix[] = {1, MCW, MCW + 1, MCW + 2, MCW + MCW + 1, REFRESH
 static short const ListWeap[] = {0, 1, 2, (MCW * 1), (MCW * 1) + 1, (MCW * 1) + 2, REFRESH_EOL};
 static short const ListWestwood[] = {1, 2, 3, MCW + 1, MCW + 2, MCW + 3, REFRESH_EOL};
 static short const OListSAM[] = {-MCW, -(MCW - 1), REFRESH_EOL};
+
+// Tiberian Factions mod — TDHAND (Nod Hand of Nod) foundation. 2 wide × 3
+// tall L-shape, copied verbatim from tiberiandawn/bdata.cpp:143 (ListHand)
+// and :163 (OListHand). Occupy = middle row + bottom-right "thumb"; overlap
+// = top row + bottom-left + middle-left.
+static short const ListHand[]  = {MCW, MCW + 1, MCW * 2 + 1, REFRESH_EOL};
+static short const OListHand[] = {0, 1, MCW * 2, MCW, REFRESH_EOL};
+
+// TDHAND exit cells — copied verbatim from tiberiandawn/bdata.cpp:77
+// (TD's ExitHand). Twelve cells fanning out around the 2×3 footprint so
+// infantry spawn on the perimeter, not inside the building.
+static short const ExitHand[] = {
+    XYCELL(2, 3),  XYCELL(1, 3),  XYCELL(0, 3),  XYCELL(2, 2),
+    XYCELL(-1, 3), XYCELL(-1, 2), XYCELL(0, 0),  XYCELL(1, 0),
+    XYCELL(-1, 0), XYCELL(2, 0),  XYCELL(2, 1),  XYCELL(-1, 1),
+    REFRESH_EOL
+};
 #ifdef FATSHIP
 static short const ListSPen[] = {0, 1, 2, MCW, MCW + 1, MCW + 2, MCW + MCW, MCW + MCW + 1, MCW + MCW + 2, REFRESH_EOL};
 static short const OListSPen[] = {REFRESH_EOL};
@@ -830,6 +847,46 @@ static BuildingTypeClass const ClassTdSam(STRUCT_TDSAM,
                                           NULL,
                                           (short const*)List21,
                                           (short const*)OListSAM
+);
+
+/*
+**  Tiberian Factions mod — M4 Tier 3 production buildings.
+**
+**  TDHAND (Nod Hand of Nod) — 2×3 infantry factory, ARMOR_WOOD, capturable.
+**    Wholesale port of TD's STRUCT_HAND per tiberiandawn/bdata.cpp:1148
+**    (ClassHand). The constructor flags match the TD source verbatim: bib,
+**    regulated animation, factory, capturable, simple damage, selectable,
+**    legal target, repairable, has crew, RTTI_INFANTRYTYPE. ExitCoordinate
+**    is TD's XYP_COORD(36, 63) — door at the bottom-right thumb of the 2x3
+**    footprint so infantry spawn outside the building, not inside.
+*/
+static BuildingTypeClass const ClassTdHand(STRUCT_TDHAND,
+                                           TXT_NONE,           // Display name (rules.ini Name= overrides).
+                                           "TDHAND",           // IniName.
+                                           FACING_NONE,        // Foundation direction from center.
+                                           XYP_COORD(36, 63),  // Door at the thumb cell — TD-authentic exit.
+                                           REMAP_ALTERNATE,    // Sidebar remap logic.
+                                           0x0000,             // Vertical offset (no turret).
+                                           0x0000,             // Primary weapon offset (no weapon).
+                                           0x0000,             // Primary weapon lateral offset (no weapon).
+                                           false,              // Is this building a fake (decoy?)
+                                           true,               // Animation rate regulated for constant speed?
+                                           false,              // Always use the given name for the building?
+                                           false,              // Is this a wall type structure?
+                                           true,               // Simple (one frame) damage imagery?
+                                           false,              // Is it invisible to radar?
+                                           true,               // Can the player select this?
+                                           true,               // Is this a legal target for attack or move?
+                                           false,              // Is this an insignificant building?
+                                           false,              // Theater specific graphic image?
+                                           false,              // Does it have a rotating turret?
+                                           true,               // Can the building be color remapped?
+                                           RTTI_INFANTRYTYPE,  // Infantry factory.
+                                           DIR_N,              // Starting idle frame.
+                                           BSIZE_23,           // 2x3 footprint (TD-authentic).
+                                           (short const*)ExitHand,
+                                           (short const*)ListHand,
+                                           (short const*)OListHand
 );
 
 static BuildingTypeClass const ClassObelisk(STRUCT_TDOBLI,
@@ -3334,6 +3391,7 @@ void BuildingTypeClass::Init_Heap(void)
     new BuildingTypeClass(ClassTdAtwr);  // STRUCT_TDATWR  (Advanced Guard Tower)
     new BuildingTypeClass(ClassTdGun);   // STRUCT_TDGUN   (Nod Turret)
     new BuildingTypeClass(ClassTdSam);   // STRUCT_TDSAM   (SAM Site)
+    new BuildingTypeClass(ClassTdHand);  // STRUCT_TDHAND  (Hand of Nod)
 }
 
 /***********************************************************************************************

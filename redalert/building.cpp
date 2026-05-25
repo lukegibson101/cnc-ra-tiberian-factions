@@ -2349,6 +2349,7 @@ int BuildingClass::Exit_Object(TechnoClass* base)
         case STRUCT_TENT:
         case STRUCT_KENNEL:
         case STRUCT_TDPYLE:     // TD GDI Barracks — shares BARRACKS exit-cell pattern (TD building.cpp:2288 aliases STRUCT_BARRACKS||STRUCT_HAND). See docs/td-tier1-verification.md.
+        case STRUCT_TDHAND:     // TD Nod Hand of Nod — same BARRACKS||HAND alias in TD source. M4 Tier 3.
 
             cell = Find_Exit_Cell(base);
             if (cell != 0) {

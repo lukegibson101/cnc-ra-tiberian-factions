@@ -726,7 +726,8 @@ TDAFLD = {
 
 TDHAND = {
     "ininame":     "TDHAND",
-    "logic":       "BARR",
+    # MIGRATED to STRUCT_TDHAND in bdata.cpp Init_Heap (M4 Tier 3, 2026-05-25).
+    "logic":       None,
     "td_asset":    "HAND",
     "footprint":   "HAND",
     "shape_size":  (48, 72),
@@ -740,7 +741,7 @@ TDHAND = {
     "cost":        300,
     "power":       -20,
     "points":      61,
-    "sight":       4,
+    "sight":       3,
     "adjacent":    1,
     "strength":    400,
     "armor":       "wood",
@@ -753,7 +754,7 @@ TDHAND = {
     "bib":         True,
     "idle_anim":   (0, 1, 0),
     "active_anim": (0, 1, 0),
-    "notes":       "TD Nod Barracks. Donor BARR (Soviet) provides factory + infantry-build behaviour. 2x3 L-shape footprint (HAND preset in bdata.cpp added this session). Sight bumped 3->4 mirroring TDPYLE for RA reveal scale. TD-Assets's HAND.ZIP only has 3 frames (1 idle + 1 damaged + 1 destroyed). BARR donor's hardcoded _anims[] cycles BSTATE_IDLE *and* BSTATE_ACTIVE through 10 frames — both must be clamped or the building flickers between idle/damaged/destroyed/blank. idle_anim=(0,1,0) + active_anim=(0,1,0) force a single-frame static sprite for both states; engine's damage shift handles transition to damaged/destroyed via Damage_Frame override on health drop.",
+    "notes":       "TD Nod Barracks. STRUCT_TDHAND with own BuildingTypeClass (ClassTdHand) modeled on TD's ClassHand. RTTI_INFANTRYTYPE factory, 2x3 L-shape footprint, ARMOR_WOOD, Sight=3 (TD-authentic). Engine dispatches: Exit_Object case at building.cpp:2348 (alongside STRUCT_BARRACKS/TENT/KENNEL/TDPYLE). Classic SHP ships via TFASSETS.MIX (TDHAND.SHP + TDHANDMAKE.SHP, packed by scripts/build_tfassets.sh). idle_anim=(0,1,0) + active_anim=(0,1,0) match TD source which has no STRUCT_HAND _anims[] entries.",
 }
 
 
