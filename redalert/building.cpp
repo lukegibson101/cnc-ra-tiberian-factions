@@ -2867,6 +2867,23 @@ TARGET BuildingClass::Greatest_Threat(ThreatType threat) const
     assert(Buildings.ID(this) == ID);
     assert(IsActive);
 
+    /*
+    **	TDSAM — direct port of tiberiandawn/building.cpp:2855-2873.
+    **	TD's SAM scans THREAT_AREA (≈2× weapon range) instead of THREAT_RANGE
+    **	so the launcher can acquire an approaching aircraft early and rise
+    **	from underground while the target is still inbound. Without this,
+    **	the ≈2-second RISING animation completes only after the aircraft has
+    **	already exited the 7.5-cell weapon range and the state machine bails
+    **	to LOWERING without firing.
+    */
+    if (*this == STRUCT_TDSAM) {
+        threat = threat | THREAT_AREA;
+        if (Class->PrimaryWeapon != NULL && Class->PrimaryWeapon->Bullet->IsAntiAircraft) {
+            threat = threat | THREAT_AIR;
+        }
+        return (TechnoClass::Greatest_Threat(threat));
+    }
+
     if (Class->PrimaryWeapon != NULL) {
         threat = threat | Class->PrimaryWeapon->Allowed_Threats();
     }

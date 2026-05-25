@@ -221,7 +221,9 @@ Place the entity on our Deck. Run actual TD on the second Deck. Compare:
 
 **Trap:** TD source has `MaxSpeed = MPH_ROCKET = 60` (raw 0-255 value). RA's `Get_MPHType` interprets `Speed=N` from rules.ini as a 0-100 *percentage* scaled to 0-256. Copying `Speed=60` from TD source into a vanilla RA-style weapon gives MaxSpeed=153 (= 60% × 255), **not** 60.
 
-**Symptom:** missiles 2.5× too fast, overshoot during arming, fail to hit close-range targets (Timer expires before proximity fuse triggers).
+**Symptom (moderate raw values like 60):** missiles 2.5× too fast, overshoot during arming, fail to hit close-range targets (Timer expires before proximity fuse triggers).
+
+**Symptom (raw value of 100, intending MPH_VERY_FAST):** *Worse and very misleading.* `Speed=100` parses as 100% → MaxSpeed=255=MPH_LIGHT_SPEED. In `Unlimbo_TD` (bullet.cpp:1022-1023) this triggers `if (speed == MPH_LIGHT_SPEED) speed = MPH_IMMOBILE;` — bullet velocity becomes 0. Bullet sits at the launcher, fuse expires after a few frames, the AA-distance damage branch (bullet.cpp:1268, `Distance(TarCom) < 0x80`) is skipped because the bullet is nowhere near the aircraft, and the impact anim plays on top of the firer. Player sees: missile emerges from turret, vanishes immediately, 0 damage. Looks like a rendering or warhead bug; is actually this Speed= bug. TDSAM/TDNike hit this 2026-05-25.
 
 **Fix:** add `IsTDPort` flag on `WeaponTypeClass`. In `Read_INI`, branch:
 ```cpp

@@ -712,12 +712,18 @@ bool RulesClass::Heap_Maximums(CCINIClass& ini)
     new WeaponTypeClass("TDTurretGun");  // WEAPON_TD_TURRET_GUN (Nod Turret)
     new WeaponTypeClass("TDOblsLaser");  // WEAPON_OBELISK_LASER (Obelisk of Light)
     new WeaponTypeClass("TDChainGun");   // WEAPON_TD_CHAIN_GUN (GDI Guard Tower)
+    new WeaponTypeClass("TDNike");       // WEAPON_TDNIKE (TD SAM Site)
 
     // Tiberian Factions mod: mark TD-ported weapons so WeaponTypeClass::Read_INI
     // parses Speed= as raw MPHType (TD source convention) instead of RA's
     // 0-100 percentage. Per [[project-td-port-architecture]] (Option A).
-    // Cargo E focus: TDTowTwo first; others added once TDATWR is 100% verified.
+    // Without this flag, Speed=100 parses as 100% → MPH_LIGHT_SPEED → the
+    // Unlimbo_TD speed swap on line 1022 forces MPH_IMMOBILE → the bullet
+    // sits at the launcher, fuse expires, and the AA-distance damage branch
+    // (bullet.cpp:1268, Distance(TarCom) < 0x80) is skipped → 0 damage and
+    // the impact anim plays on top of the firer instead of on the target.
     WeaponTypeClass::As_Pointer(Weapon_From_Name("TDTowTwo"))->IsTDPort = true;
+    WeaponTypeClass::As_Pointer(Weapon_From_Name("TDNike"))->IsTDPort = true;
 
     return (true);
 }

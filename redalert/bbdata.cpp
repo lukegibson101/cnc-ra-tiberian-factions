@@ -192,6 +192,7 @@ void BulletTypeClass::Init_Heap(void)
     new BulletTypeClass("TDLaser");       //	BULLET_LASER (TD Obelisk beam)
     new BulletTypeClass("TDAPDS");        //	BULLET_TDAPDS (TD Nod Turret 120mm shell)
     new BulletTypeClass("TDSpreadfire");  //	BULLET_TDSPREADFIRE (TD GDI chain-gun pellet)
+    new BulletTypeClass("TDPatriot");     //	BULLET_TDPATRIOT (TD SAM Patriot missile)
 
     // Tiberian Factions mod: mark every TD-ported bullet so BulletClass::AI /
     // Unlimbo dispatch to the verbatim TD code path. Per
@@ -202,6 +203,7 @@ void BulletTypeClass::Init_Heap(void)
     BulletTypes.Ptr((int)BULLET_LASER)->IsTDPort = true;
     BulletTypes.Ptr((int)BULLET_TDAPDS)->IsTDPort = true;
     BulletTypes.Ptr((int)BULLET_TDSPREADFIRE)->IsTDPort = true;
+    BulletTypes.Ptr((int)BULLET_TDPATRIOT)->IsTDPort = true;
 }
 
 /***********************************************************************************************
