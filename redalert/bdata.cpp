@@ -1009,6 +1009,44 @@ static BuildingTypeClass const ClassTdHq(STRUCT_TDHQ,
                                          (short const*)OComList
 );
 
+/*
+**  TDEYE (Advanced Communications Center / Eye of Kane) — 2×2, ARMOR_WOOD,
+**    non-capturable, crewed, no turret. Verbatim port of TD's STRUCT_EYE
+**    per tiberiandawn/bdata.cpp:213 (ClassEye). Not a factory
+**    (ToBuild=RTTI_NONE); hosts the Ion Cannon superweapon (wired in
+**    Phase E3 — building separation alone in Phase E1 grants no super).
+**    Starting idle frame DirType(160) matches TD source. Reuses RA's
+**    ComList/OComList for the 2x2 foundation pattern (same as TDHQ).
+*/
+static BuildingTypeClass const ClassTdEye(STRUCT_TDEYE,
+                                          TXT_NONE,           // Display name token; rules.ini Name= overrides.
+                                          "TDEYE",            // IniName.
+                                          FACING_NONE,        // Foundation direction.
+                                          XYP_COORD(0, 0),    // No produced-unit exit.
+                                          REMAP_ALTERNATE,    // Sidebar remap logic.
+                                          0x0000,             // Vertical offset.
+                                          0x0000,             // Primary weapon offset.
+                                          0x0000,             // Primary weapon lateral offset.
+                                          false,              // Is this building a fake?
+                                          true,               // Animation rate regulated for constant speed?
+                                          false,              // Always use the given name?
+                                          false,              // Is this a wall type structure?
+                                          false,              // Simple (one frame) damage imagery?
+                                          false,              // Is it invisible to radar?
+                                          true,               // Can the player select this?
+                                          true,               // Is this a legal target?
+                                          false,              // Is this an insignificant building?
+                                          false,              // Theater specific graphic image?
+                                          false,              // Does it have a rotating turret?
+                                          true,               // Can the building be color remapped?
+                                          RTTI_NONE,          // Not a factory.
+                                          (DirType)160,       // Starting idle frame (TD-authentic).
+                                          BSIZE_22,           // 2x2 footprint (TD-authentic).
+                                          NULL,               // No preferred exit cell.
+                                          (short const*)ComList,
+                                          (short const*)OComList
+);
+
 static BuildingTypeClass const ClassObelisk(STRUCT_TDOBLI,
                                             TXT_NONE,        // Display name token; rules.ini Name= overrides.
                                             "TDOBLI",        // IniName.
@@ -3515,6 +3553,7 @@ void BuildingTypeClass::Init_Heap(void)
     new BuildingTypeClass(ClassTdHpad);  // STRUCT_TDHPAD  (Helipad)
     new BuildingTypeClass(ClassTdFix);   // STRUCT_TDFIX   (Service Depot)
     new BuildingTypeClass(ClassTdHq);    // STRUCT_TDHQ    (Communications Center)
+    new BuildingTypeClass(ClassTdEye);   // STRUCT_TDEYE   (Advanced Communications Center)
 }
 
 /***********************************************************************************************
@@ -3608,6 +3647,10 @@ void BuildingTypeClass::One_Time(void)
         // M4 Tier 3 — TDHQ radar-dish rotation (TD-authentic per
         // tiberiandawn/bdata.cpp:3800).
         {STRUCT_TDHQ, BSTATE_IDLE, 0, 16, 4},
+        // M5 Tier 4 — TDEYE 16-frame idle cycle (TD-authentic per
+        // tiberiandawn/bdata.cpp:3794). Ion Cannon visual + super wiring
+        // lands in Phase E2/E3; this is the structural building only.
+        {STRUCT_TDEYE, BSTATE_IDLE, 0, 16, 4},
     };
 
     for (int sindex = STRUCT_FIRST; sindex < STRUCT_COUNT; sindex++) {

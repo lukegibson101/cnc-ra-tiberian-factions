@@ -431,7 +431,12 @@ TDATWR = {
 
 TDEYE = {
     "ininame":     "TDEYE",
-    "logic":       "MSLO",
+    # MIGRATED to STRUCT_TDEYE in bdata.cpp Init_Heap (M5 Tier 4, 2026-05-26).
+    # Logic=MSLO previously granted RA AtomBomb super as a placeholder; the
+    # Ion Cannon superweapon proper lands in Phase E2/E3 (see
+    # docs/building-separation-plan.md M5 entries). Phase E1 (this commit)
+    # ships the building structurally only — no super, no Ion Cannon visual.
+    "logic":       None,
     "td_asset":    "EYE",
     # RA MSLO donor is BSIZE_21 (2x1); TD EYE is BSIZE_22 with the L-shape
     # NUK2 pattern (occupy {0, MCW, MCW+1}, overlap {1}). EYE preset reuses
@@ -462,7 +467,7 @@ TDEYE = {
     "repairable":  True,
     "bib":         True,
     "idle_anim":   (0, 16, 4),
-    "notes":       "TD GDI Advanced Comm / Ion Cannon host. Logic=MSLO grants superweapon timer; visual is Atom Bomb placeholder (Ion Cannon beam-strike effect is v0.4 engine work). Cap=no per TD canon (superweapon hosts can't be captured). -200 power drain is TD-authentic and intentional.",
+    "notes":       "TD GDI Advanced Comm / Ion Cannon host. MIGRATED to STRUCT_TDEYE; Logic= dropped. Ion Cannon weapon effects + HouseClass machinery land in Phase E2/E3. Cap=no per TD canon (superweapon hosts can't be captured). -200 power drain is TD-authentic and intentional.",
 }
 
 

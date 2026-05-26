@@ -54,6 +54,9 @@ ENTRIES=(
     "FIXMAKE.SHP:TDFIXMAKE.SHP"
     "HQ.SHP:TDHQ.SHP"
     "HQMAKE.SHP:TDHQMAKE.SHP"
+    # M5 Tier 4 — superweapon hosts.
+    "EYE.SHP:TDEYE.SHP"
+    "EYEMAKE.SHP:TDEYEMAKE.SHP"
 )
 
 # Extract each SHP from CONQUER.MIX into the temp dir.
