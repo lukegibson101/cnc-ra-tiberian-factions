@@ -7478,12 +7478,33 @@ void HouseClass::Recalc_Attributes(void)
         if (btype < 32) {
             building->House->BScan |= (1L << btype);
         }
-        // Tiberian Factions: STRUCT_TDHQ + STRUCT_TDEYE both shadow
-        // STRUCTF_RADAR so the recomputed bitmask still satisfies the
-        // radar-activation tests at house.cpp:1502+. Mirrors the
-        // Unlimbo-time shadow in BuildingClass::Unlimbo (~building.cpp:1228).
+        // Tiberian Factions: TD-separated buildings live at enum slots
+        // past 31, so `1L << btype` would overflow the 32-bit BScan
+        // bitmask (and the `if (btype < 32)` guard above skips them).
+        // Shadow each TD building into its closest vanilla RA equivalent
+        // so the defeat-on-no-scans check at house.cpp:1474 still sees
+        // a non-zero bitmask when a player has only TD-separated buildings.
+        // Also matters for radar-activation, MCV-deploy gating, etc.
         if (btype == STRUCT_TDHQ || btype == STRUCT_TDEYE) {
             building->House->BScan |= STRUCTF_RADAR;
+        }
+        if (btype == STRUCT_TDFACT) {
+            building->House->BScan |= STRUCTF_CONST;
+        }
+        if (btype == STRUCT_TDWEAP) {
+            building->House->BScan |= STRUCTF_WEAP;
+        }
+        if (btype == STRUCT_TDAFLD) {
+            building->House->BScan |= STRUCTF_AIRSTRIP;
+        }
+        if (btype == STRUCT_TDHPAD) {
+            building->House->BScan |= STRUCTF_HELIPAD;
+        }
+        if (btype == STRUCT_TDFIX) {
+            building->House->BScan |= STRUCTF_REPAIR;
+        }
+        if (btype == STRUCT_TDPYLE || btype == STRUCT_TDHAND) {
+            building->House->BScan |= STRUCTF_BARRACKS;
         }
         if (building->IsLocked
             && (Session.Type != GAME_NORMAL || !building->House->IsHuman || building->IsDiscoveredByPlayer)) {
@@ -7495,6 +7516,30 @@ void HouseClass::Recalc_Attributes(void)
                 if (btype == STRUCT_TDHQ || btype == STRUCT_TDEYE) {
                     building->House->ActiveBScan |= STRUCTF_RADAR;
                     building->House->OldBScan |= STRUCTF_RADAR;
+                }
+                if (btype == STRUCT_TDFACT) {
+                    building->House->ActiveBScan |= STRUCTF_CONST;
+                    building->House->OldBScan |= STRUCTF_CONST;
+                }
+                if (btype == STRUCT_TDWEAP) {
+                    building->House->ActiveBScan |= STRUCTF_WEAP;
+                    building->House->OldBScan |= STRUCTF_WEAP;
+                }
+                if (btype == STRUCT_TDAFLD) {
+                    building->House->ActiveBScan |= STRUCTF_AIRSTRIP;
+                    building->House->OldBScan |= STRUCTF_AIRSTRIP;
+                }
+                if (btype == STRUCT_TDHPAD) {
+                    building->House->ActiveBScan |= STRUCTF_HELIPAD;
+                    building->House->OldBScan |= STRUCTF_HELIPAD;
+                }
+                if (btype == STRUCT_TDFIX) {
+                    building->House->ActiveBScan |= STRUCTF_REPAIR;
+                    building->House->OldBScan |= STRUCTF_REPAIR;
+                }
+                if (btype == STRUCT_TDPYLE || btype == STRUCT_TDHAND) {
+                    building->House->ActiveBScan |= STRUCTF_BARRACKS;
+                    building->House->OldBScan |= STRUCTF_BARRACKS;
                 }
                 if (btype >= 0 && btype < MAX_BUILDING_TYPES) {
                     building->House->ActiveBQuantity[btype]++;
@@ -8592,7 +8637,7 @@ void HouseClass::Check_Pertinent_Structures(void)
         for (int index = 0; index < Units.Count(); index++) {
             UnitClass* unit = Units.Ptr(index);
 
-            if (unit && unit->IsActive && *unit == UNIT_MCV && unit->House == this) {
+            if (unit && unit->IsActive && (*unit == UNIT_MCV || *unit == UNIT_TDMCV) && unit->House == this) {
                 if (!unit->IsInLimbo && unit->Strength > 0) {
                     any_good_buildings = true;
                     break;
@@ -8602,6 +8647,41 @@ void HouseClass::Check_Pertinent_Structures(void)
     }
 
     if (!any_good_buildings) {
+        // TF DIAGNOSTIC 2026-05-27: when Check_Pertinent_Structures decides
+        // the player has lost, log a snapshot of the house's building/unit
+        // inventory so we can diagnose which check failed (was the TDFACT
+        // not in Buildings? Wrong house? IsInLimbo? Strength 0?). Stub
+        // under #if 0 once verified per [[feedback-keep-diagnostics-until-v1]].
+#if 1
+        {
+            const char* up = getenv("USERPROFILE");
+            char p[512];
+            if (up) snprintf(p, sizeof(p), "%s/Documents/CnCRemastered/tf_pertinent.log", up);
+            else strcpy(p, "tf_pertinent.log");
+            FILE* f = fopen(p, "a");
+            if (f) {
+                fprintf(f, "[Check_Pertinent_Structures] FLAG_TO_DIE house=%d ActLike=%d Buildings=%d Units=%d\n",
+                        (int)Class->House, (int)ActLike, Buildings.Count(), Units.Count());
+                for (int i = 0; i < Buildings.Count(); i++) {
+                    BuildingClass* b = Buildings.Ptr(i);
+                    if (b && b->House == this) {
+                        fprintf(f, "  b[%d] IniName=%s Type=%d IsActive=%d IsInLimbo=%d Str=%d IsWall=%d\n",
+                                i, b->Class->IniName, (int)b->Class->Type, (int)b->IsActive,
+                                (int)b->IsInLimbo, (int)b->Strength, (int)b->Class->IsWall);
+                    }
+                }
+                for (int i = 0; i < Units.Count(); i++) {
+                    UnitClass* u = Units.Ptr(i);
+                    if (u && u->House == this) {
+                        fprintf(f, "  u[%d] IniName=%s Type=%d IsActive=%d IsInLimbo=%d Str=%d\n",
+                                i, u->Class->IniName, (int)u->Class->Type, (int)u->IsActive,
+                                (int)u->IsInLimbo, (int)u->Strength);
+                    }
+                }
+                fclose(f);
+            }
+        }
+#endif
         Flag_To_Die();
     }
 }

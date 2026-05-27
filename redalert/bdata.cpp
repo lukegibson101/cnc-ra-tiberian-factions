@@ -1025,6 +1025,48 @@ static BuildingTypeClass const ClassTdWeap(STRUCT_TDWEAP,
 );
 
 /*
+**  TDFACT (Construction Yard) — 3×2 building, ARMOR_WOOD, capturable, crewed.
+**    Wholesale port of TD's STRUCT_CONST per tiberiandawn/bdata.cpp:534
+**    (ClassConst). NOT a unit factory — RTTI_BUILDINGTYPE (produces other
+**    buildings, not vehicles). Shared by HOUSE_GOOD + HOUSE_BAD, matching
+**    TD's original (one MCV/ConYard type for both factions).
+**
+**    Footprint mirrors TD source exactly: BSIZE_32 + List32 (3×2 = 6 cells,
+**    no overlap row). RA's STRUCT_CONST is BSIZE_33 with ListFactory (3×3,
+**    9 cells) — a different shape per playbook §3.13 donor-parity trap.
+**    Worked example of why "copy donor verbatim" fails for buildings whose
+**    TD/RA donor footprints diverge.
+*/
+static BuildingTypeClass const ClassTdFact(STRUCT_TDFACT,
+                                           TXT_NONE,           // Display name (rules.ini Name= overrides).
+                                           "TDFACT",           // IniName.
+                                           FACING_NONE,        // Foundation direction.
+                                           XYP_COORD(0, 0),    // Exit point unused (not a vehicle factory).
+                                           REMAP_ALTERNATE,    // Sidebar remap logic.
+                                           0x0000,             // Vertical offset.
+                                           0x0000,             // Primary weapon offset.
+                                           0x0000,             // Primary weapon lateral offset.
+                                           false,              // Is this building a fake?
+                                           false,              // Animation rate regulated for constant speed?
+                                           false,              // Always use the given name?
+                                           false,              // Is this a wall type structure?
+                                           false,              // Simple (one frame) damage imagery?
+                                           false,              // Is it invisible to radar?
+                                           true,               // Can the player select this?
+                                           true,               // Is this a legal target?
+                                           false,              // Is this an insignificant building?
+                                           false,              // Theater specific graphic image?
+                                           false,              // Does it have a rotating turret?
+                                           true,               // Can the building be color remapped?
+                                           RTTI_BUILDINGTYPE,  // Produces buildings (TD-authentic line 561).
+                                           DIR_N,              // Starting idle frame.
+                                           BSIZE_32,           // 3x2 footprint (TD-authentic — NOT RA's 3x3).
+                                           NULL,               // No preferred exit cell.
+                                           (short const*)List32,
+                                           (short const*)NULL  // No overlap row.
+);
+
+/*
 **  TDAFLD (Nod Airstrip) — 4×2 flat tile, ARMOR_STEEL, capturable, crewed.
 **    Wholesale port of TD's STRUCT_AIRSTRIP per tiberiandawn/bdata.cpp:841
 **    (ClassAirStrip). RTTI_UNITTYPE factory; vehicles delivered via cargo
@@ -3699,6 +3741,7 @@ void BuildingTypeClass::Init_Heap(void)
     new BuildingTypeClass(ClassTdHq);    // STRUCT_TDHQ    (Communications Center)
     new BuildingTypeClass(ClassTdWeap);  // STRUCT_TDWEAP  (Weapons Factory)
     new BuildingTypeClass(ClassTdAfld);  // STRUCT_TDAFLD  (Nod Airstrip)
+    new BuildingTypeClass(ClassTdFact);  // STRUCT_TDFACT  (Construction Yard)
     new BuildingTypeClass(ClassTdEye);   // STRUCT_TDEYE   (Advanced Communications Center)
     new BuildingTypeClass(ClassTdTmpl);  // STRUCT_TDTMPL  (Temple of Nod)
 }
@@ -3803,6 +3846,10 @@ void BuildingTypeClass::One_Time(void)
         // the strip). TD-authentic per tiberiandawn/bdata.cpp:3789.
         {STRUCT_TDAFLD, BSTATE_IDLE, 0, 16, 3},
         {STRUCT_TDAFLD, BSTATE_AUX1, 0, 8, 3},
+        // M4 Tier 3 — TDFACT 20-frame deploy/active cycle + 4-frame idle.
+        // TD-authentic per tiberiandawn/bdata.cpp:3792-3793.
+        {STRUCT_TDFACT, BSTATE_ACTIVE, 4, 20, 3},
+        {STRUCT_TDFACT, BSTATE_IDLE, 0, 4, 3},
         // M5 Tier 4 — TDEYE 16-frame idle cycle (TD-authentic per
         // tiberiandawn/bdata.cpp:3794). Ion Cannon visual + super wiring
         // lands in Phase E2/E3; this is the structural building only.

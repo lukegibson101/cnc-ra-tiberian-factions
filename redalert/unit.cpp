@@ -111,29 +111,17 @@ extern bool Is_Legacy_Render_Enabled(void);
 #endif
 
 /*
-**  Map a deploying unit to the StructType it should produce. Vanilla:
-**  every MCV deploys into STRUCT_CONST. Our mod: HOUSE_GOOD (GDI) MCVs
-**  deploy into the TD-themed Construction Yard (TDFACT) instead, closing
-**  the GDI visual loop. Resolution is by IniName because TDFACT lives in
-**  the BuildingTypes heap past STRUCT_COUNT (Logic=FACT aliases its Type
-**  to STRUCT_CONST, but BuildingClass's StructType ctor param is treated
-**  as a heap index, so we want TDFACT's actual slot here). Returns
-**  STRUCT_CONST as fallback if TDFACT isn't registered (e.g. vanilla
-**  rules.ini load). Kept as a free function alongside the unit.cpp deploy
-**  code rather than a method so the change is reversible by deleting
-**  this block + restoring the literal `STRUCT_CONST` sites.
+**  Map a deploying MCV to the StructType it should produce. UNIT_TDMCV
+**  (Tiberian Factions MCV, shared by GDI + Nod) deploys into the
+**  TD-source Construction Yard STRUCT_TDFACT. Vanilla UNIT_MCV deploys
+**  into STRUCT_CONST as RA always did. Now a clean type dispatch
+**  (post-separation) — was previously an IniName-string lookup gated
+**  on ActLike==HOUSE_GOOD, before TDMCV/TDFACT became real enum entries.
 */
 static StructType MCV_Deploy_Building(UnitClass const* unit)
 {
-    // Faction-membership check uses ActLike rather than Class->House so it
-    // works in multiplayer/skirmish, where Class->House is the HOUSE_MULTI1+N
-    // slot identity and ActLike is what the France→HOUSE_GOOD launcher swap
-    // writes (cf. techno.cpp:6796-6797 which checks both for the same reason).
-    if (unit != NULL && unit->House->ActLike == HOUSE_GOOD) {
-        BuildingTypeClass const* tdfact = BuildingTypeClass::As_Pointer("TDFACT");
-        if (tdfact != NULL) {
-            return (StructType)BuildingTypes.ID(tdfact);
-        }
+    if (unit != NULL && *unit == UNIT_TDMCV) {
+        return STRUCT_TDFACT;
     }
     return STRUCT_CONST;
 }
@@ -1153,7 +1141,7 @@ ResultType UnitClass::Take_Damage(int& damage, int distance, WarheadType warhead
             House->Flag_To_Die();
         }
 
-        if (*this == UNIT_MCV) {
+        if (*this == UNIT_MCV || *this == UNIT_TDMCV) {
             if (House) {
                 House->Check_Pertinent_Structures();
             }
@@ -1563,7 +1551,7 @@ bool UnitClass::Try_To_Deploy(void)
     assert(IsActive);
 
     if (!Target_Legal(NavCom) && !IsRotating) {
-        if (*this == UNIT_MCV) {
+        if (*this == UNIT_MCV || *this == UNIT_TDMCV) {
 
             /*
             **	Determine if it is legal to deploy at this location. If not, tell the
@@ -2710,6 +2698,7 @@ int UnitClass::Mission_Unload(void)
         break;
 
     case UNIT_MCV:
+    case UNIT_TDMCV:    // TD MCV — same deploy AI as UNIT_MCV.
         switch (Status) {
         case 0:
             Path[0] = FACING_NONE;
@@ -3126,7 +3115,7 @@ int UnitClass::Mission_Hunt(void)
     assert(Units.ID(this) == ID);
     assert(IsActive);
 
-    if (*this == UNIT_MCV) {
+    if (*this == UNIT_MCV || *this == UNIT_TDMCV) {
         enum
         {
             FIND_SPOT,
@@ -3617,7 +3606,7 @@ ActionType UnitClass::What_Action(ObjectClass const* object) const
     **	Don't allow special deploy action unless there is something to deploy.
     */
     if (action == ACTION_SELF) {
-        if (*this == UNIT_MCV) {
+        if (*this == UNIT_MCV || *this == UNIT_TDMCV) {
 
             /*
             **	The MCV will get the no-deploy cursor if it couldn't
@@ -3855,7 +3844,7 @@ int UnitClass::Mission_Guard(void)
         //		return(MissionControl[Mission].Normal_Delay() + Random_Pick(0, 2));
     }
 
-    if (*this == UNIT_MCV && House->IsBaseBuilding) {
+    if ((*this == UNIT_MCV || *this == UNIT_TDMCV) && House->IsBaseBuilding) {
         Assign_Mission(MISSION_UNLOAD);
         return (MissionControl[Mission].Normal_Delay() + Random_Pick(0, 2));
     }

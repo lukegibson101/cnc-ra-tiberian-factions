@@ -1243,15 +1243,39 @@ bool BuildingClass::Unlimbo(COORDINATE coord, DirType dir)
             House->BScan |= (1L << btype);
             House->ActiveBScan |= (1L << btype);
         }
-        // Tiberian Factions: STRUCT_TDHQ + STRUCT_TDEYE both act as radar
-        // facilities — also contribute STRUCTF_RADAR so HouseClass::AI's
-        // radar activation (~house.cpp:1502) sees them. TDEYE is the GDI
-        // Adv Comm Centre and grants radar identically to TDHQ in canon.
-        // Heap types past 31 can't represent themselves in BScan; we
-        // shadow the closest vanilla bit instead.
+        // Tiberian Factions: TD-separated buildings live at enum slots
+        // past 31 and can't represent themselves in the 32-bit BScan
+        // bitmask. Shadow each one into its closest vanilla RA equivalent
+        // so all engine checks against `BScan & STRUCTF_X` still work.
+        // Critical for the defeat-on-no-scans check (house.cpp:1474) and
+        // for radar activation, MCV deploy, etc.
         if (btype == STRUCT_TDHQ || btype == STRUCT_TDEYE) {
             House->BScan |= STRUCTF_RADAR;
             House->ActiveBScan |= STRUCTF_RADAR;
+        }
+        if (btype == STRUCT_TDFACT) {
+            House->BScan |= STRUCTF_CONST;
+            House->ActiveBScan |= STRUCTF_CONST;
+        }
+        if (btype == STRUCT_TDWEAP) {
+            House->BScan |= STRUCTF_WEAP;
+            House->ActiveBScan |= STRUCTF_WEAP;
+        }
+        if (btype == STRUCT_TDAFLD) {
+            House->BScan |= STRUCTF_AIRSTRIP;
+            House->ActiveBScan |= STRUCTF_AIRSTRIP;
+        }
+        if (btype == STRUCT_TDHPAD) {
+            House->BScan |= STRUCTF_HELIPAD;
+            House->ActiveBScan |= STRUCTF_HELIPAD;
+        }
+        if (btype == STRUCT_TDFIX) {
+            House->BScan |= STRUCTF_REPAIR;
+            House->ActiveBScan |= STRUCTF_REPAIR;
+        }
+        if (btype == STRUCT_TDPYLE || btype == STRUCT_TDHAND) {
+            House->BScan |= STRUCTF_BARRACKS;
+            House->ActiveBScan |= STRUCTF_BARRACKS;
         }
         House->Active_Building_Add(btype);
 
@@ -2055,7 +2079,7 @@ void BuildingClass::Active_Click_With(ActionType action, CELL cell)
         Player_Assign_Mission(MISSION_ATTACK, ::As_Target(cell));
     }
 
-    if (action == ACTION_MOVE && *this == STRUCT_CONST) {
+    if (action == ACTION_MOVE && (*this == STRUCT_CONST || *this == STRUCT_TDFACT)) {
         OutList.Add(EventClass(EventClass::ARCHIVE, TargetClass(this), TargetClass(::As_Target(cell))));
         OutList.Add(EventClass(EventClass::SELL, TargetClass(this)));
 
@@ -3338,7 +3362,7 @@ ActionType BuildingClass::What_Action(CELL cell) const
 
     ActionType action = TechnoClass::What_Action(cell);
 
-    if (action == ACTION_MOVE && (*this != STRUCT_CONST || !Is_MCV_Deploy())) {
+    if (action == ACTION_MOVE && ((*this != STRUCT_CONST && *this != STRUCT_TDFACT) || !Is_MCV_Deploy())) {
         action = ACTION_NONE;
     }
 
@@ -3872,7 +3896,7 @@ MoveType BuildingClass::Can_Enter_Cell(CELL cell, FacingType) const
     assert(Buildings.ID(this) == ID);
     assert(IsActive);
 
-    if (*this == STRUCT_CONST && IsDown) {
+    if ((*this == STRUCT_CONST || *this == STRUCT_TDFACT) && IsDown) {
         return (Map[cell].Is_Clear_To_Build(Class->Speed) ? MOVE_OK : MOVE_NO);
     }
 
@@ -4186,7 +4210,7 @@ int BuildingClass::Mission_Deconstruction(void)
             **	members leaving is equal to the unrecovered cost of the building
             **	divided by 100 (the typical cost of a minigunner infantryman).
             */
-            if (!Target_Legal(ArchiveTarget) || !Is_MCV_Deploy() || *this != STRUCT_CONST) {
+            if (!Target_Legal(ArchiveTarget) || !Is_MCV_Deploy() || (*this != STRUCT_CONST && *this != STRUCT_TDFACT)) {
                 int count = How_Many_Survivors();
                 bool engine = false;
 
@@ -4287,9 +4311,14 @@ int BuildingClass::Mission_Deconstruction(void)
             **	Construction yards that deconstruct, really just revert back
             **	to an MCV.
             */
-            if (Target_Legal(ArchiveTarget) && *this == STRUCT_CONST && House->IsHuman && Strength > 0) {
+            if (Target_Legal(ArchiveTarget) && (*this == STRUCT_CONST || *this == STRUCT_TDFACT) && House->IsHuman && Strength > 0) {
+                // Tiberian Factions: STRUCT_TDFACT undeploys to UNIT_TDMCV
+                // (the TD MCV), which will re-deploy into STRUCT_TDFACT via
+                // MCV_Deploy_Building. Vanilla STRUCT_CONST keeps UNIT_MCV
+                // → STRUCT_CONST round-trip unchanged.
+                UnitType mcv_type = (*this == STRUCT_TDFACT) ? UNIT_TDMCV : UNIT_MCV;
                 ScenarioInit++;
-                UnitClass* unit = new UnitClass(UNIT_MCV, House->Class->House);
+                UnitClass* unit = new UnitClass(mcv_type, House->Class->House);
                 ScenarioInit--;
                 if (unit != NULL) {
 
@@ -4783,7 +4812,7 @@ int BuildingClass::Mission_Repair(void)
     assert(Buildings.ID(this) == ID);
     assert(IsActive);
 
-    if (*this == STRUCT_CONST) {
+    if ((*this == STRUCT_CONST || *this == STRUCT_TDFACT)) {
         enum
         {
             INITIAL,
@@ -5898,6 +5927,7 @@ InfantryType BuildingClass::Crew_Type(void) const
         }
 
     case STRUCT_CONST:
+    case STRUCT_TDFACT:    // TD ConYard — same Engineer-on-sell crew spawn semantics.
         if (!IsCaptured && House->IsHuman && Percent_Chance(25)) {
             return (INFANTRY_RENOVATOR);
         }
@@ -6094,7 +6124,7 @@ bool BuildingClass::Can_Player_Move(void) const
     assert(Buildings.ID(this) == ID);
     assert(IsActive);
 
-    return (*this == STRUCT_CONST && (Mission == MISSION_GUARD) && Special.IsMCVDeploy);
+    return ((*this == STRUCT_CONST || *this == STRUCT_TDFACT) && (Mission == MISSION_GUARD) && Special.IsMCVDeploy);
 }
 
 /***********************************************************************************************
@@ -6297,7 +6327,7 @@ void BuildingClass::Read_INI(CCINIClass& ini)
                     }
                     b->IsAllowedToSell = sellable;
                     b->IsToRebuild = rebuild;
-                    b->IsToRepair = rebuild || *b == STRUCT_CONST;
+                    b->IsToRepair = rebuild || *b == STRUCT_CONST || *b == STRUCT_TDFACT;
 
                     if (b->Unlimbo(Cell_Coord(cell), facing)) {
                         strength = min(strength, 0x100);
@@ -6699,7 +6729,7 @@ void BuildingClass::Repair_AI(void)
             } else {
                 if ((Session.Type != GAME_NORMAL || IsAllowedToSell) && IsTickedOff
                     && House->Control.TechLevel >= Rule.IQSellBack && Random_Pick(0, 50) < House->Control.TechLevel
-                    && !Trigger.Is_Valid() && *this != STRUCT_CONST && Health_Ratio() < Rule.ConditionRed) {
+                    && !Trigger.Is_Valid() && (*this != STRUCT_CONST && *this != STRUCT_TDFACT) && Health_Ratio() < Rule.ConditionRed) {
                     Sell_Back(1);
                 }
             }
@@ -6780,7 +6810,7 @@ void BuildingClass::Animation_AI(void)
             **	the loop.
             */
             if (Fetch_Stage() == ctrl->Start + ctrl->Count - 1
-                || (!Target_Legal(ArchiveTarget) /*Is_MCV_Deploy()*/ && *this == STRUCT_CONST
+                || (!Target_Legal(ArchiveTarget) /*Is_MCV_Deploy()*/ && (*this == STRUCT_CONST || *this == STRUCT_TDFACT)
                     && Mission == MISSION_DECONSTRUCTION && Fetch_Stage() == (42 - 19))) {
                 IsReadyToCommence = true;
             }

@@ -1492,6 +1492,7 @@ typedef enum StructType : char
     STRUCT_TDHQ,
     STRUCT_TDWEAP,
     STRUCT_TDAFLD,
+    STRUCT_TDFACT,
 
     // M5 Tier 4 — superweapon hosts.
     STRUCT_TDEYE,
@@ -1694,6 +1695,9 @@ typedef enum UnitType : char
     UNIT_PHASE,             // cloaking APC for special missions
 #endif
 #endif
+
+    // Tiberian Factions mod — fully-separated TD-source unit ports.
+    UNIT_TDMCV,             // TD Mobile Construction Vehicle (deploys to STRUCT_TDFACT).
 
     UNIT_COUNT,
     UNIT_FIRST = 0

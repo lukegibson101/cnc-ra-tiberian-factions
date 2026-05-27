@@ -360,6 +360,46 @@ static UnitTypeClass const UnitMCV(UNIT_MCV,
                                    MISSION_HUNT     // ORDERS:		Default order to give new unit.
 );
 
+/*
+**  TDMCV (Tiberian Factions Mobile Construction Vehicle) — verbatim port
+**  of TD's UNIT_MCV (tiberiandawn/udata.cpp:638 UnitMCV). RA's UnitTypeClass
+**  ctor has 21 params vs TD's 27 (RA elides build_level/cost/strength/armor/
+**  weapons/ownable — those come from rules.ini). Field values mirror RA's
+**  UnitMCV with one philosophical difference: TDMCV is conceptually shared
+**  by HOUSE_GOOD + HOUSE_BAD (matching TD original — both factions use the
+**  same MCV sprite), but the rules.ini [TDMCV] Owner= field controls
+**  ownability at runtime. Deploy creates STRUCT_TDFACT (not STRUCT_CONST)
+**  — see UnitClass::Try_To_Deploy per-type extension.
+*/
+static UnitTypeClass const UnitTdMcv(UNIT_TDMCV,
+                                     TXT_MCV,         // NAME:			Text name of this unit type.
+                                     "TDMCV",         // NAME:			IniName.
+                                     ANIM_FBALL1,     // EXPLOSION:	Type of explosion when destroyed.
+                                     REMAP_ALTERNATE, // Sidebar remap logic.
+                                     0x0000,          //	Vertical offset.
+                                     0x0000,          // Primary weapon offset along turret centerline.
+                                     0x0000,          // Primary weapon lateral offset along turret centerline.
+                                     0x0000,          // Secondary weapon offset along turret centerline.
+                                     0x0000,          // Secondary weapon lateral offset along turret centerling.
+                                     true,            // Can this be a goodie surprise from a crate?
+                                     false,           // Always use the given name for the vehicle?
+                                     true,            // Can this unit squash infantry?
+                                     false,           // Does this unit harvest Tiberium?
+                                     false,           // Is invisible to radar?
+                                     false,           // Is it insignificant (won't be announced)?
+                                     false,           // Is it equipped with a combat turret?
+                                     false,           // Does it have a rotating radar dish?
+                                     false,           // Is there an associated firing animation?
+                                     false,           // Must the turret be in a locked down position while moving?
+                                     true,            // Is this a gigundo-rotund-enormous unit?
+                                     false,           // Does the unit have a constant animation?
+                                     false,           // Is the unit capable of jamming radar?
+                                     false,           // Is the unit a mobile gap generator?
+                                     32,              // Rotation stages.
+                                     0,               // Turret center offset along body centerline.
+                                     MISSION_HUNT     // ORDERS:		Default order to give new unit.
+);
+
 // Jeep (hummer)
 static UnitTypeClass const UnitJeep(UNIT_JEEP,
                                     TXT_JEEP,     // NAME:			Text name of this unit type.
@@ -988,6 +1028,8 @@ void UnitTypeClass::Init_Heap(void)
     new UnitTypeClass(UnitPhase);     //	UNIT_PHASETRANSPORT
 #endif
 #endif
+    // Tiberian Factions mod — fully-separated TD-source unit ports.
+    new UnitTypeClass(UnitTdMcv);     // UNIT_TDMCV
 }
 
 /***********************************************************************************************

@@ -3316,24 +3316,17 @@ static void Create_Units(bool official)
             scaleval = 1;
             Reserve_Unit();
             /*
-            **  HOUSE_GOOD (GDI) starts with a TD-themed MCV (TDMCV) instead of
-            **  the vanilla RA MCV — closes the "wake up as GDI" visual loop
-            **  paired with TDFACT. Faction-membership check must use
-            **  hptr->ActLike rather than hptr->Class->House: for multiplayer
-            **  / skirmish, Class->House is the HOUSE_MULTI1+N slot identity
-            **  while ActLike carries the actual faction the player picked
-            **  (HOUSE_GOOD when the France→HOUSE_GOOD launcher swap fires;
-            **  see dllinterface.cpp:903). techno.cpp:6796 checks both for
-            **  the same reason. TDMCV is a Logic=MCV alias added via
-            **  [NewUnits]; lookup is by IniName because the heap slot is
-            **  rules-load assigned. Fallback to UNIT_MCV if mod entry absent.
+            **  Tiberian Factions: GDI + Nod both spawn UNIT_TDMCV (the TD
+            **  Mobile Construction Vehicle), which deploys into STRUCT_TDFACT
+            **  per UnitClass::Try_To_Deploy. Matches TD original — both
+            **  factions used the same MCV/ConYard sprites. Faction check uses
+            **  hptr->ActLike (not Class->House) so multiplayer/skirmish slot
+            **  identity doesn't matter — the launcher's France→HOUSE_GOOD /
+            **  Spain/Turkey→HOUSE_BAD swap sets ActLike correctly.
             */
             UnitType mcv_type = UNIT_MCV;
-            UnitTypeClass const* tdmcv_lookup = UnitTypeClass::As_Pointer("TDMCV");
-            if (hptr->ActLike == HOUSE_GOOD) {
-                if (tdmcv_lookup != NULL) {
-                    mcv_type = (UnitType)UnitTypes.ID(tdmcv_lookup);
-                }
+            if (hptr->ActLike == HOUSE_GOOD || hptr->ActLike == HOUSE_BAD) {
+                mcv_type = UNIT_TDMCV;
             }
             /*
             **  Diagnostic for v0.3 phase5e — TDMCV scenario-spawn intercept.
@@ -3356,11 +3349,10 @@ static void Create_Units(bool official)
                 if (dlog != NULL) {
                     fprintf(dlog,
                             "MCV-spawn slot=%d ActLike=%d Class->House=%d "
-                            "TDMCV_in_heap=%s mcv_type=%d UnitTypes.Count=%d\n",
+                            "mcv_type=%d UnitTypes.Count=%d\n",
                             (int)house,
                             (int)hptr->ActLike,
                             (int)hptr->Class->House,
-                            tdmcv_lookup != NULL ? "yes" : "no",
                             (int)mcv_type,
                             UnitTypes.Count());
                     fclose(dlog);

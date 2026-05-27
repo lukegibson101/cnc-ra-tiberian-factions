@@ -469,9 +469,9 @@ TDEYE = {
 
 TDFACT = {
     "ininame":     "TDFACT",
-    "logic":       "FACT",
+    "logic":       None,         # M4 Tier 3 separated 2026-05-27 — STRUCT_TDFACT native.
     "td_asset":    "FACT",
-    "footprint":   None,  # RA FACT donor is BSIZE_33 (3x3); matches TD FACT.
+    "footprint":   None,         # ClassTdFact uses native BSIZE_32 + List32 (TD-authentic 3x2; RA's STRUCT_CONST is BSIZE_33).
     "shape_size":  (72, 72),
     # No DESC variant in launcher localization (sidebar cameo is rarely shown
     # — TechLevel=99 makes it sidebar-unbuildable; ConYard only spawns via
