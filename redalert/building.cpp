@@ -200,6 +200,7 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass* from, RadioMessageTy
             return (RADIO_NEGATIVE);
         switch (Class->Type) {
         case STRUCT_AIRSTRIP:
+        case STRUCT_TDAFLD:    // TD Nod Airstrip — same fixed-wing dock semantics.
             if (from->What_Am_I() == RTTI_AIRCRAFT && ((AircraftClass const*)from)->Class->IsFixedWing) {
                 return (RADIO_ROGER);
             }
@@ -251,6 +252,7 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass* from, RadioMessageTy
             return (RADIO_ROGER);
 
         case STRUCT_AIRSTRIP:
+        case STRUCT_TDAFLD:    // TD Nod Airstrip — repair-on-dock for cargo plane.
         case STRUCT_HELIPAD:
         case STRUCT_TDHPAD:    // TD Helipad — repair-on-dock.
             Assign_Mission(MISSION_REPAIR);
@@ -310,6 +312,7 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass* from, RadioMessageTy
         if (Transmit_Message(RADIO_NEED_TO_MOVE) == RADIO_ROGER) {
             switch (Class->Type) {
             case STRUCT_AIRSTRIP:
+            case STRUCT_TDAFLD:    // TD Nod Airstrip — dock target is the building itself.
                 param = As_Target();
                 break;
 
@@ -407,7 +410,7 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass* from, RadioMessageTy
         }
         TechnoClass::Receive_Message(from, message, param);
         if (*this == STRUCT_WEAP || *this == STRUCT_AIRSTRIP || *this == STRUCT_REPAIR || *this == STRUCT_TDFIX
-            || *this == STRUCT_TDWEAP)
+            || *this == STRUCT_TDWEAP || *this == STRUCT_TDAFLD)
             return (RADIO_RUN_AWAY);
         return (RADIO_ROGER);
 
@@ -555,15 +558,11 @@ void BuildingClass::Draw_It(int x, int y, WindowNumberType window) const
             Techno_Draw_Object_Virtual(Class->WarFactoryOverlayTd, shapenum, x, y, window, DIR_N, 0x0100, "TDWEAP2");
         }
 
-        // Skip the WEAP2 door/roof overlay for TD-prefixed mod entries that
-        // share STRUCT_WEAP via Logic= aliasing but don't actually have a
-        // second-layer structure to composite. TDAFLD (Nod Airstrip) is a
-        // flat 4x2 tile with no roof — drawing TDWEAP2 on top of it plants
-        // the GDI Weapons Factory's yellow roof in the middle of the
-        // airstrip. Future single-piece TD-WEAP-aliased entries should be
-        // added here, or this should migrate to a rules.ini flag.
-        bool skip_warfactory_overlay = (stricmp(Class->IniName, "TDAFLD") == 0);
-        if ((*this == STRUCT_WEAP || *this == STRUCT_FAKEWEAP) && !skip_warfactory_overlay) {
+        // WEAP2 overlay for vanilla RA WEAP / FAKEWEAP only. STRUCT_TDWEAP
+        // gets its own TDWEAP2 overlay block above; STRUCT_TDAFLD is a flat
+        // 4×2 strip with no second-layer art and routes through its own
+        // case STRUCT_TDAFLD in Exit_Object — neither needs this branch.
+        if (*this == STRUCT_WEAP || *this == STRUCT_FAKEWEAP) {
             int shapenum = Door_Stage();
             if (Health_Ratio() <= Rule.ConditionYellow)
                 shapenum += 4;
@@ -2257,107 +2256,29 @@ int BuildingClass::Exit_Object(TechnoClass* base)
             ScenarioInit--;
             break;
 
-        case STRUCT_WEAP:
-            // TDAFLD (Nod Airstrip) is Logic=WEAP aliased, so it lands in
-            // this case — but its production flow is fundamentally
-            // different: instead of opening a door and driving the vehicle
-            // out a track, a TDC17 cargo plane flies in from the east map
-            // edge with the vehicle attached, lands on the strip via
-            // MISSION_UNLOAD, drops the unit, and retreats off-map.
-            // Mirrors the reinf.cpp SOURCE_AIR pattern from tiberiandawn.
-            {
-                // Diagnostic 2026-05-21: TDAFLD cargo-plane delivery
-                // didn't appear on first Deck playtest. Log every Exit_Object
-                // call for STRUCT_WEAP-type buildings so we can see which
-                // IniNames hit this branch and where (if at all) the TDAFLD
-                // path bails. Path uses %USERPROFILE% per
-                // reference-diagnostic-paths memory.
-                static FILE* s_afld_log = NULL;
-                if (s_afld_log == NULL) {
-                    char dpath[512];
-                    const char* dprof = getenv("USERPROFILE");
-                    if (dprof != NULL && dprof[0] != '\0') {
-                        snprintf(dpath, sizeof(dpath),
-                                 "%s\\Documents\\CnCRemastered\\tf_tdafld_exit.log", dprof);
-                        s_afld_log = fopen(dpath, "w");
-                    }
-                }
-                if (s_afld_log != NULL) {
-                    fprintf(s_afld_log,
-                            "Exit_Object STRUCT_WEAP IniName=[%s] base=%p baseclass=%d\n",
-                            Class->IniName, (void*)base, base ? base->What_Am_I() : -1);
-                    fflush(s_afld_log);
-                }
-
-                if (strncmp(Class->IniName, "TDAFLD", 6) == 0) {
-                    AircraftClass* plane = new AircraftClass(AIRCRAFT_TDCARGO,
-                                                             House->Class->House);
-                    if (s_afld_log) {
-                        fprintf(s_afld_log,
-                                "  TDAFLD branch entered. plane=%p AIRCRAFT_COUNT=%d aircraft_active=%d\n",
-                                (void*)plane, AIRCRAFT_COUNT, Aircraft.Count());
-                        fflush(s_afld_log);
-                    }
-                    if (plane != NULL) {
-                        COORDINATE dock = Docking_Coord();
-                        // Spawn off the EAST edge, fly west toward dock,
-                        // continue west off the west edge after cargo drop.
-                        // Constant speed throughout — no decel on approach.
-                        // Altitude scales down on approach (low-pass landing)
-                        // then scales back up via MISSION_RETREAT.
-                        int spawn_x = Cell_To_Lepton(Map.MapCellX + Map.MapCellWidth) | 0x80;
-                        COORDINATE spawn = XY_Coord(spawn_x, Coord_Y(dock));
-                        ScenarioInit++;
-                        bool unlimbo_ok = plane->Unlimbo(spawn, DIR_W);
-                        if (s_afld_log) {
-                            fprintf(s_afld_log,
-                                    "  dock=0x%08x spawn=0x%08x spawn_x=%d (east edge) Unlimbo=%d\n",
-                                    (unsigned)dock, (unsigned)spawn, spawn_x, unlimbo_ok);
-                            fflush(s_afld_log);
-                        }
-                        if (unlimbo_ok) {
-                            // TD-port (reinf.cpp:386-415 SOURCE_AIR + our
-                            // patched Find_Docking_Bay): spawn with cargo
-                            // attached and MISSION_UNLOAD directly. NO
-                            // pre-NavCom, NO pre-radio handshake.
-                            // Mission_Unload's PICK_AIRSTRIP runs on the
-                            // first AI tick and uses Find_Docking_Bay
-                            // (patched in techno.cpp to recognize TDAFLD)
-                            // to find the airstrip, transmit RADIO_HELLO,
-                            // assign NavCom to building target, transition
-                            // to FLY_TO_AIRSTRIP — exactly as TD does.
-                            //
-                            // Earlier attempts: (1) pre-assign NavCom +
-                            // radio → collided with engine's per-tick
-                            // Enter_Idle_Mode and AircraftClass::Assign_
-                            // Destination Status=0 reset, producing 580-
-                            // tick orbit. (2) MISSION_HUNT initially →
-                            // engine's Enter_Idle_Mode auto-promote
-                            // theory was wrong; plane stayed in HUNT
-                            // forever.
-                            plane->IsALoaner = true;
-                            plane->Attach((FootClass*)base);
-                            plane->Set_Speed(0xFF);
-                            plane->Assign_Mission(MISSION_UNLOAD);
-                            plane->Commence();
-                            ScenarioInit--;
-                            if (s_afld_log) {
-                                fprintf(s_afld_log,
-                                        "  Dispatched (UNLOAD, no pre-NavCom). Coord=0x%08x Mission=%d\n",
-                                        (unsigned)plane->Coord, (int)plane->Mission);
-                                fflush(s_afld_log);
-                            }
-                            return (2);
-                        }
-                        delete plane;
-                        ScenarioInit--;
-                        if (s_afld_log) {
-                            fprintf(s_afld_log, "  Unlimbo failed; plane deleted; falling through.\n");
-                            fflush(s_afld_log);
-                        }
-                    }
-                }
+        case STRUCT_TDAFLD:
+            // STRUCT_TDAFLD — verbatim port of TD's case STRUCT_AIRSTRIP
+            // (tiberiandawn/building.cpp:2263-2269). Cargo plane delivery
+            // via TD's Create_Special_Reinforcement: spawns AIRCRAFT_TDCARGO
+            // (TDC17) with the produced vehicle as a second team member, sets
+            // mission TMISSION_UNLOAD with the building as the target so the
+            // plane lands here. Engine then drives the verbatim-ported
+            // AircraftClass::Mission_Unload state machine (PICK_AIRSTRIP →
+            // FLY_TO_AIRSTRIP → BUG_OUT) per docs/cargo-plane-port.md §5.
+            //
+            // `delete base` mirrors TD source — Create_Special_Reinforcement
+            // spawns a NEW instance of `ttype` via Do_Reinforcements; the
+            // factory-produced `base` is no longer needed once the team is
+            // dispatched.
+            if (Create_Special_Reinforcement(
+                    House, &AircraftTypeClass::As_Reference(AIRCRAFT_TDCARGO),
+                    ttype, TMISSION_UNLOAD, As_Target())) {
+                delete base;
+                return (2);
             }
+            return (0);
+
+        case STRUCT_WEAP:
             if (Mission == MISSION_UNLOAD) {
                 for (int index = 0; index < Buildings.Count(); index++) {
                     BuildingClass* bldg = Buildings.Ptr(index);
@@ -2857,7 +2778,7 @@ void BuildingClass::Update_Buildables(void)
 
                 if (PlayerPtr->Can_Build(&AircraftTypeClass::As_Reference((AircraftType)a), ActLike)) {
                     if (AircraftTypeClass::As_Reference((AircraftType)a).IsFixedWing) {
-                        if (*this == STRUCT_AIRSTRIP) {
+                        if (*this == STRUCT_AIRSTRIP || *this == STRUCT_TDAFLD) {
                             Map.Add(RTTI_AIRCRAFTTYPE, a);
                         }
                     } else {
@@ -3329,10 +3250,10 @@ ActionType BuildingClass::What_Action(ObjectClass const* object) const
             case RTTI_AIRCRAFTTYPE:
             case RTTI_AIRCRAFT:
                 action = ACTION_NONE;
-                if (*this == STRUCT_AIRSTRIP) {
+                if (*this == STRUCT_AIRSTRIP || *this == STRUCT_TDAFLD) {
                     for (index = 0; index < Buildings.Count(); index++) {
                         BuildingClass* bldg = Buildings.Ptr(index);
-                        if (bldg != this && bldg->Owner() == Owner() && *bldg == STRUCT_AIRSTRIP) {
+                        if (bldg != this && bldg->Owner() == Owner() && *bldg == Class->Type) {
                             action = ACTION_TOGGLE_PRIMARY;
                             break;
                         }
@@ -3520,13 +3441,10 @@ COORDINATE BuildingClass::Docking_Coord(void) const
     if (*this == STRUCT_AIRSTRIP) {
         return (Coord_Add(Coord, XYP_COORD(ICON_PIXEL_W + ICON_PIXEL_W / 2, 28)));
     }
-    // TDAFLD is Logic=WEAP aliased, so Type == STRUCT_WEAP — but it has the
-    // same 4x2 footprint as an airstrip and needs the same docking offset
-    // for the TDC17 cargo-plane delivery sequence to land on the strip
-    // visually rather than the building's geometric centre. Match by
-    // IniName so future Logic-aliased airstrip variants can opt in.
-    if (strncmp(Class->IniName, "TDAFLD", 6) == 0) {
-        return (Coord_Add(Coord, XYP_COORD(ICON_PIXEL_W + ICON_PIXEL_W / 2, 28)));
+    if (*this == STRUCT_TDAFLD) {
+        // TD-authentic offset (tiberiandawn/building.cpp:3469). Cargo plane
+        // (TDC17) lands at the centre-front of the 4×2 strip.
+        return (Coord_Add(Coord, XYP_COORD(18, 30)));
     }
     return (TechnoClass::Docking_Coord());
 }

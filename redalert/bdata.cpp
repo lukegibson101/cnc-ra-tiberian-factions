@@ -1025,6 +1025,57 @@ static BuildingTypeClass const ClassTdWeap(STRUCT_TDWEAP,
 );
 
 /*
+**  TDAFLD (Nod Airstrip) — 4×2 flat tile, ARMOR_STEEL, capturable, crewed.
+**    Wholesale port of TD's STRUCT_AIRSTRIP per tiberiandawn/bdata.cpp:841
+**    (ClassAirStrip). RTTI_UNITTYPE factory; vehicles delivered via cargo
+**    plane (AIRCRAFT_TDCARGO) using TD's Create_Special_Reinforcement
+**    pattern in Exit_Object — see building.cpp case STRUCT_TDAFLD.
+**
+**    Footprint mirrors TD source: TdList42 occupies all 8 cells of a 4×2
+**    flat foundation (no overlap row — TDAFLD is single-layer art, unlike
+**    TDWEAP's 3×3 with row-0 overhang). TdExitAirstrip is TD's 16-cell
+**    exit preference list — wraps around all 4 sides of the strip so
+**    delivered vehicles can disembark to any adjacent cell.
+*/
+static short const TdExitAirstrip[] = {XYCELL(-1, -1), XYCELL(-1, 0), XYCELL(-1, 1), XYCELL(-1, 2),
+                                       XYCELL(0, -1), XYCELL(0, 2),
+                                       XYCELL(1, -1), XYCELL(1, 2),
+                                       XYCELL(2, -1), XYCELL(2, 2),
+                                       XYCELL(3, -1), XYCELL(3, 2),
+                                       XYCELL(4, -1), XYCELL(4, 0), XYCELL(4, 1), XYCELL(4, 2),
+                                       REFRESH_EOL};
+static short const TdList42[] = {0, 1, 2, 3, MCW, MCW + 1, MCW + 2, MCW + 3, REFRESH_EOL};
+
+static BuildingTypeClass const ClassTdAfld(STRUCT_TDAFLD,
+                                           TXT_NONE,           // Display name (rules.ini Name= overrides).
+                                           "TDAFLD",           // IniName.
+                                           FACING_NONE,        // Foundation direction.
+                                           XYP_COORD(0, 0),    // Exit point unused — cargo plane delivery.
+                                           REMAP_ALTERNATE,    // Sidebar remap logic.
+                                           0x0000,             // Vertical offset.
+                                           0x0000,             // Primary weapon offset.
+                                           0x0000,             // Primary weapon lateral offset.
+                                           false,              // Is this building a fake?
+                                           true,               // Animation rate regulated for constant speed (TD ClassAirStrip).
+                                           false,              // Always use the given name?
+                                           false,              // Is this a wall type structure?
+                                           false,              // Simple (one frame) damage imagery?
+                                           false,              // Is it invisible to radar?
+                                           true,               // Can the player select this?
+                                           true,               // Is this a legal target?
+                                           false,              // Is this an insignificant building?
+                                           false,              // Theater specific graphic image?
+                                           false,              // Does it have a rotating turret?
+                                           true,               // Can the building be color remapped?
+                                           RTTI_UNITTYPE,      // Vehicle factory — TD-authentic (TD source line 868). Cargo plane is just the delivery mechanism, not the produced item.
+                                           DIR_N,              // Starting idle frame.
+                                           BSIZE_42,           // 4x2 footprint (TD-authentic).
+                                           (short const*)TdExitAirstrip,
+                                           (short const*)TdList42,
+                                           (short const*)NULL  // No overlap row.
+);
+
+/*
 **  TDHQ (Communications Center / Radar) — 2×2 radar dome, ARMOR_WOOD,
 **    capturable, crewed. Wholesale port of TD's STRUCT_RADAR per
 **    tiberiandawn/bdata.cpp:739 (ClassCommand). Not a factory
@@ -3647,6 +3698,7 @@ void BuildingTypeClass::Init_Heap(void)
     new BuildingTypeClass(ClassTdFix);   // STRUCT_TDFIX   (Service Depot)
     new BuildingTypeClass(ClassTdHq);    // STRUCT_TDHQ    (Communications Center)
     new BuildingTypeClass(ClassTdWeap);  // STRUCT_TDWEAP  (Weapons Factory)
+    new BuildingTypeClass(ClassTdAfld);  // STRUCT_TDAFLD  (Nod Airstrip)
     new BuildingTypeClass(ClassTdEye);   // STRUCT_TDEYE   (Advanced Communications Center)
     new BuildingTypeClass(ClassTdTmpl);  // STRUCT_TDTMPL  (Temple of Nod)
 }
@@ -3747,6 +3799,10 @@ void BuildingTypeClass::One_Time(void)
         // Values lifted verbatim from tiberiandawn/bdata.cpp:3813-3814.
         {STRUCT_TDWEAP, BSTATE_ACTIVE, 0, 1, 0},
         {STRUCT_TDWEAP, BSTATE_IDLE, 0, 1, 0},
+        // M4 Tier 3 — TDAFLD 16-frame idle cycle (radar dish rotation on
+        // the strip). TD-authentic per tiberiandawn/bdata.cpp:3789.
+        {STRUCT_TDAFLD, BSTATE_IDLE, 0, 16, 3},
+        {STRUCT_TDAFLD, BSTATE_AUX1, 0, 8, 3},
         // M5 Tier 4 — TDEYE 16-frame idle cycle (TD-authentic per
         // tiberiandawn/bdata.cpp:3794). Ion Cannon visual + super wiring
         // lands in Phase E2/E3; this is the structural building only.

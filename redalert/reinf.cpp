@@ -465,8 +465,37 @@ bool Do_Reinforcements(TeamTypeClass const* teamtype)
             desiredfacing = Random_Pick(DIR_N, DIR_MAX);
         }
 
+        /*
+        **  TD-source AIRCRAFT_CARGO east-edge override (tiberiandawn/reinf.cpp:
+        **  345-385). When a cargo plane reinforces to deliver a vehicle to
+        **  STRUCT_AIRSTRIP, TD overrides the house's default edge: the plane
+        **  spawns at the EAST map edge aligned to the airstrip's docking-coord
+        **  Y, then flies straight west. Without this, RA's Do_Reinforcements
+        **  uses house->Control.Edge (defaults SOURCE_NORTH) and the plane
+        **  arrives from the wrong direction. Ported here for AIRCRAFT_TDCARGO
+        **  + STRUCT_TDAFLD since RA's reinf.cpp lacked the AIRCRAFT_CARGO
+        **  branch entirely.
+        */
+        COORDINATE override_coord = 0;
+        DirType override_facing = desiredfacing;
+        bool use_override = false;
+        if (object->What_Am_I() == RTTI_AIRCRAFT && *((AircraftClass*)object) == AIRCRAFT_TDCARGO) {
+            BuildingClass const* building = ((AircraftClass*)object)->Find_Docking_Bay(STRUCT_TDAFLD, false);
+            if (building) {
+                COORDINATE docking_coord = building->Docking_Coord();
+                int border_x = Cell_To_Lepton(Map.MapCellX + Map.MapCellWidth) | 0x80;
+                override_coord = XY_Coord(border_x, Coord_Y(docking_coord));
+                override_facing = DIR_W;
+                use_override = true;
+                if (teamtype->MissionCount) {
+                    ((TeamTypeClass*)teamtype)->MissionList[0].Data.Value = building->As_Target();
+                }
+            }
+        }
+
         ScenarioInit++;
-        if (object->Unlimbo(Cell_Coord(newcell), desiredfacing)) {
+        if (use_override ? object->Unlimbo(override_coord, override_facing)
+                         : object->Unlimbo(Cell_Coord(newcell), desiredfacing)) {
             okvoice = true;
 
             /*

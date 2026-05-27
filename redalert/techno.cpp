@@ -6494,23 +6494,15 @@ bool TechnoClass::Evaluate_Object(ThreatType method,
         **	type in this house's inventory. If not, then don't bother to scan
         **	for one.
         */
-        // TD-port (reinf.cpp SOURCE_AIR cargo-plane delivery): when looking
-        // for STRUCT_AIRSTRIP, also accept TDAFLD buildings. TDAFLD has
-        // Type=STRUCT_WEAP via Logic=WEAP aliasing, so the standard
-        // Get_Quantity(STRUCT_AIRSTRIP) + (*building == STRUCT_AIRSTRIP)
-        // checks miss it. The TDAFLD-as-airstrip semantics matter for the
-        // cargo-plane delivery path — Nod's airstrip is the docking target
-        // even though the engine treats it as a war factory internally.
-        bool looking_for_airstrip = (b == STRUCT_AIRSTRIP);
-        // TD-port: STRUCT_TDHPAD is a fully-separated helipad — when an
-        // aircraft asks for STRUCT_HELIPAD, also accept TDHPAD so rotary
-        // aircraft can dock on our Nod/GDI Helipad variants.
-        bool looking_for_helipad = (b == STRUCT_HELIPAD);
-        // TD-port: STRUCT_TDFIX is a fully-separated Service Depot — when
-        // a unit/aircraft asks for STRUCT_REPAIR, also accept TDFIX.
-        bool looking_for_repair = (b == STRUCT_REPAIR);
+        // TD-port: fully-separated TD buildings shadow vanilla RA factory
+        // roles. When an aircraft/unit looks for an RA factory type, also
+        // accept its TD equivalent. Each `looking_for_X` flag enables a
+        // cross-match in the building scan below.
+        bool looking_for_airstrip = (b == STRUCT_AIRSTRIP);  // → STRUCT_TDAFLD
+        bool looking_for_helipad = (b == STRUCT_HELIPAD);    // → STRUCT_TDHPAD
+        bool looking_for_repair = (b == STRUCT_REPAIR);      // → STRUCT_TDFIX
         bool has_candidate = (House->Get_Quantity(b) != 0)
-                             || (looking_for_airstrip && House->Get_Quantity(STRUCT_WEAP) != 0)
+                             || (looking_for_airstrip && House->Get_Quantity(STRUCT_TDAFLD) != 0)
                              || (looking_for_helipad && House->Get_Quantity(STRUCT_TDHPAD) != 0)
                              || (looking_for_repair && House->Get_Quantity(STRUCT_TDFIX) != 0);
         if (has_candidate) {
@@ -6526,11 +6518,9 @@ bool TechnoClass::Evaluate_Object(ThreatType method,
                 if (building == NULL)
                     continue;
 
-                // Match: native StructType, OR TDAFLD-as-airstrip fallback,
-                // OR TDHPAD-as-helipad fallback (separated TD helipad),
-                // OR TDFIX-as-repair-bay fallback (separated TD Service Depot).
-                bool tdafld_match = looking_for_airstrip
-                                    && strncmp(building->Class->IniName, "TDAFLD", 6) == 0;
+                // Match: native StructType, OR a separated TD building that
+                // shadows the requested vanilla RA factory role.
+                bool tdafld_match = looking_for_airstrip && (*building == STRUCT_TDAFLD);
                 bool tdhpad_match = looking_for_helipad && (*building == STRUCT_TDHPAD);
                 bool tdfix_match = looking_for_repair && (*building == STRUCT_TDFIX);
                 bool type_match = (*building == b) || tdafld_match || tdhpad_match || tdfix_match;
@@ -6540,16 +6530,7 @@ bool TechnoClass::Evaluate_Object(ThreatType method,
                 /*
                 **	Check to see if the building qualifies (preliminary scan).
                 */
-                // RADIO_CAN_LOAD is helipad/refinery semantics — our TDAFLD
-                // (Logic=WEAP) doesn't accept it via its inherited WEAP
-                // Receive_Message. Skip that check for the TDAFLD case; the
-                // actual docking handshake uses RADIO_HELLO later in
-                // PICK_AIRSTRIP, which buildings accept liberally. Without
-                // this bypass Find_Docking_Bay returns NULL, PICK_AIRSTRIP
-                // falls to its retreat path, and the plane despawns
-                // immediately off-radar with the cargo still attached.
-                bool can_load_ok = tdafld_match
-                                   || ((TechnoClass*)this)->Transmit_Message(RADIO_CAN_LOAD, building) == RADIO_ROGER;
+                bool can_load_ok = ((TechnoClass*)this)->Transmit_Message(RADIO_CAN_LOAD, building) == RADIO_ROGER;
                 if ((friendly ? building->House->Is_Ally(this) : building->House == House)
                     && !building->IsInLimbo
                     && (What_Am_I() == RTTI_AIRCRAFT

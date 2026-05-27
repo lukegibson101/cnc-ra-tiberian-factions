@@ -701,9 +701,9 @@ TDTMPL = {
 
 TDAFLD = {
     "ininame":     "TDAFLD",
-    "logic":       "WEAP",
+    "logic":       None,         # M4 Tier 3 separated 2026-05-27 — STRUCT_TDAFLD native, no engine alias.
     "td_asset":    "AFLD",
-    "footprint":   "AFLD",
+    "footprint":   None,         # ClassTdAfld uses native TdList42 + TdExitAirstrip (BSIZE_42 4x2 flat, TD-authentic).
     "shape_size":  (96, 48),
     "text_id_name": "TEXT_STRUCTURE_TITLE_NOD_AIRFIELD",
     "text_id_desc": "TEXT_STRUCTURE_DESC_NOD_AIRFIELD",
@@ -728,7 +728,7 @@ TDAFLD = {
     "bib":         True,
     "idle_anim":   (0, 16, 3),
     "active_anim": (0, 1, 0),
-    "notes":       "TD Nod Airstrip. Logic=WEAP donor + TDC17 cargo-plane delivery (v0.3.1-phase2d, 2026-05-21). Vehicles produced from TDAFLD are flown in by a C-17 cargo plane that enters from the east edge, drops the vehicle on a strip-adjacent exit cell, and continues west off-map. Replaces the v0.3.1-phase1 stopgap where vehicles emerged mid-strip via WEAP's TD-SW exit track. Canonical port writeup in docs/cargo-plane-port.md — the cargo-plane delivery activates 10 dormant mechanics in RA (Mission_Unload state machine port, Enter_Idle_Mode in-air cargo branch, Edge_Of_World_AI vestigial AIRCRAFT_CARGO clause, Find_Docking_Bay IniName + CAN_LOAD bypass, etc.). 4x2 footprint (AFLD preset in bdata.cpp). idle_anim=(0,16,3) TD-authentic (STRUCT_AIRSTRIP _anims[] in TD source). active_anim still clamped to (0,1,0) since WEAP donor's door-open ACTIVE animation doesn't apply to a doorless airstrip — and is now irrelevant since cargo arrives by air, not by door.",
+    "notes":       "TD Nod Airstrip. STRUCT_TDAFLD with own BuildingTypeClass (ClassTdAfld) modeled on TD's ClassAirStrip (tiberiandawn/bdata.cpp:841). RTTI_UNITTYPE vehicle factory, 4x2 BSIZE_42, ARMOR_STEEL, Strength=500 (TD-authentic). Cargo-plane delivery via TD's Create_Special_Reinforcement in Exit_Object — AIRCRAFT_TDCARGO (TDC17) spawns at east edge, lands on strip via verbatim-ported Mission_Unload state machine (PICK_AIRSTRIP/FLY_TO_AIRSTRIP/BUG_OUT), drops vehicle, exits west. Engine dispatches: STRUCT_AIRSTRIP|STRUCT_TDAFLD per-type extensions in Receive_Message (RADIO_CAN_LOAD, RADIO_DOCKING, RADIO_UNLOADED, RADIO_RUN_AWAY), Docking_Coord (TD-authentic XYP_COORD(18,30)), Find_Docking_Bay (techno.cpp:6486), Who_Can_Build_Me aircraft factory hardcode (object.cpp:2443). Canonical port writeup in docs/cargo-plane-port.md (cargo-plane mechanics — building separation is a clean refactor on top).",
 }
 
 
