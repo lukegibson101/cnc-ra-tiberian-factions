@@ -3514,10 +3514,20 @@ bool HouseClass::Place_Object(RTTIType type, CELL cell)
                 /*
                 **	Try to find a place for the object to appear from. For helicopters, it has the
                 **	option of finding a nearby helipad if no helipads are free.
+                **	Tiberian Factions: vehicles produced at STRUCT_TDAFLD are delivered by
+                **	cargo plane — the airstrip is in radio contact with the in-flight plane,
+                **	which would normally cause Who_Can_Build_Me to reject it. Retry with
+                **	`intheory=true` (same fallback path as helicopters) so back-to-back
+                **	queue completions dispatch immediately rather than waiting for plane #1
+                **	to deliver and release the tether.
                 */
                 TechnoClass* builder = pending->Who_Can_Build_Me(false, false);
                 if (builder == NULL && pending->What_Am_I() == RTTI_AIRCRAFT
                     && !((AircraftClass*)pending)->Class->IsFixedWing) {
+                    builder = pending->Who_Can_Build_Me(true, false);
+                }
+                if (builder == NULL && pending->What_Am_I() == RTTI_UNIT
+                    && Get_Quantity(STRUCT_TDAFLD) > 0) {
                     builder = pending->Who_Can_Build_Me(true, false);
                 }
 #else
@@ -3533,7 +3543,49 @@ bool HouseClass::Place_Object(RTTIType type, CELL cell)
                         intheory = true;
                     }
                 }
+                /*
+                **  Tiberian Factions: vehicles produced at STRUCT_TDAFLD are
+                **  delivered by cargo plane. While the previous plane is in-
+                **  flight, TDAFLD is in radio contact with it — which would
+                **  normally cause Who_Can_Build_Me to reject the building.
+                **  Setting intheory=true bypasses that radio-contact filter
+                **  so back-to-back queue completions dispatch immediately
+                **  rather than waiting for plane #1 to deliver and release
+                **  the tether. Same mechanism the engine already uses for
+                **  helicopters when their helipad is busy.
+                */
+                if (pending->What_Am_I() == RTTI_UNIT && Get_Quantity(STRUCT_TDAFLD) > 0) {
+                    intheory = true;
+                }
                 TechnoClass* builder = pending->Who_Can_Build_Me(intheory, false);
+                // TF DIAGNOSTIC 2026-05-27: stubbed after multi-plane convoy
+                // verified working. Re-enable (#if 1) to log every Place_Object
+                // call (rtti, intheory, builder match, TDAFLD quantity). Useful
+                // for diagnosing factory-stall / wrong-builder issues. Per
+                // [[feedback-keep-diagnostics-until-v1]].
+#if 0
+                {
+                    static FILE* s_pol = NULL;
+                    if (s_pol == NULL) {
+                        const char* up = getenv("USERPROFILE");
+                        char p[512];
+                        if (up) snprintf(p, sizeof(p), "%s/Documents/CnCRemastered/tf_place_object.log", up);
+                        else strcpy(p, "tf_place_object.log");
+                        s_pol = fopen(p, "a");
+                    }
+                    if (s_pol) {
+                        fprintf(s_pol,
+                            "[Place_Object] type=%d pending=%s rtti=%d intheory=%d builder=%s tdafld_qty=%d\n",
+                            (int)type,
+                            pending ? pending->Class_Of().IniName : "(null)",
+                            pending ? (int)pending->What_Am_I() : -1,
+                            (int)intheory,
+                            builder ? builder->Class_Of().IniName : "(null)",
+                            (int)Get_Quantity(STRUCT_TDAFLD));
+                        fflush(s_pol);
+                    }
+                }
+#endif
 #endif
                 TechnoTypeClass const* object_type = pending->Techno_Type_Class();
                 if (builder != NULL && builder->Exit_Object(pending)) {

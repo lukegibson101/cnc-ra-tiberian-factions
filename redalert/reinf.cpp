@@ -475,12 +475,31 @@ bool Do_Reinforcements(TeamTypeClass const* teamtype)
         **  arrives from the wrong direction. Ported here for AIRCRAFT_TDCARGO
         **  + STRUCT_TDAFLD since RA's reinf.cpp lacked the AIRCRAFT_CARGO
         **  branch entirely.
+        **
+        **  Two-step building lookup so back-to-back deliveries work:
+        **  1. Find_Docking_Bay(STRUCT_TDAFLD, false) — preferred (free strip).
+        **  2. Iterate Buildings list directly — fallback when the strip is
+        **     busy with a prior plane. We need the spawn coord regardless of
+        **     dock availability; PICK_AIRSTRIP then circles until the strip
+        **     frees. Without the fallback, the plane spawns at the default
+        **     house edge (north for Nod) and arrives from the wrong direction.
         */
         COORDINATE override_coord = 0;
         DirType override_facing = desiredfacing;
         bool use_override = false;
         if (object->What_Am_I() == RTTI_AIRCRAFT && *((AircraftClass*)object) == AIRCRAFT_TDCARGO) {
             BuildingClass const* building = ((AircraftClass*)object)->Find_Docking_Bay(STRUCT_TDAFLD, false);
+            if (building == NULL) {
+                HousesType house_id = HouseClass::As_Pointer(teamtype->House)->Class->House;
+                for (int i = 0; i < Buildings.Count(); i++) {
+                    BuildingClass const* b = Buildings.Ptr(i);
+                    if (b && !b->IsInLimbo && b->House->Class->House == house_id
+                        && (*b == STRUCT_TDAFLD || *b == STRUCT_AIRSTRIP)) {
+                        building = b;
+                        break;
+                    }
+                }
+            }
             if (building) {
                 COORDINATE docking_coord = building->Docking_Coord();
                 int border_x = Cell_To_Lepton(Map.MapCellX + Map.MapCellWidth) | 0x80;

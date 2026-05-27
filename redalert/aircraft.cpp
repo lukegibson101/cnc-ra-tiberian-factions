@@ -1232,29 +1232,59 @@ int AircraftClass::Mission_Unload(void)
         case PICK_AIRSTRIP:
             if (!Target_Legal(NavCom) || !In_Radio_Contact()) {
                 BuildingClass* target_building = As_Building(NavCom);
-                BuildingClass* building = (target_building != NULL && *target_building == STRUCT_AIRSTRIP)
+                bool nav_is_airstrip = (target_building != NULL
+                                        && (*target_building == STRUCT_AIRSTRIP
+                                            || *target_building == STRUCT_TDAFLD));
+                BuildingClass* building = nav_is_airstrip
                                               ? target_building
-                                              : Find_Docking_Bay(STRUCT_AIRSTRIP, false);
+                                              : Find_Docking_Bay(STRUCT_TDAFLD, false);
+
+                /*
+                **  Convoy fallback: if Find_Docking_Bay returned NULL because
+                **  every strip is busy with a prior plane, iterate Buildings
+                **  list directly to find any TDAFLD/AIRSTRIP this house owns.
+                **  Without this, plane #2+ would lose its target and circle
+                **  off-map. With this, every plane heads straight for the
+                **  strip in a straight-line east→west convoy and queues up
+                **  near the dock; landings happen in arrival order as the
+                **  strip frees between deliveries.
+                */
+                if (building == NULL) {
+                    for (int i = 0; i < Buildings.Count(); i++) {
+                        BuildingClass* b = Buildings.Ptr(i);
+                        if (b && !b->IsInLimbo && b->House == House
+                            && (*b == STRUCT_TDAFLD || *b == STRUCT_AIRSTRIP)) {
+                            building = b;
+                            break;
+                        }
+                    }
+                }
+
                 if (building) {
+                    /*
+                    **  Always face and head for the strip — even if the
+                    **  RADIO_HELLO handshake gets RADIO_NEGATIVE (strip busy
+                    **  with another plane). The next tick will retry RADIO_HELLO
+                    **  and once the strip frees, Status transitions to
+                    **  FLY_TO_AIRSTRIP. No random-circling: this is the
+                    **  "boom boom boom" straight-line convoy behavior — planes
+                    **  spawn east-aligned to the strip and fly west at full
+                    **  speed regardless of dock availability.
+                    */
+                    Assign_Destination(building->As_Target());
+                    PrimaryFacing.Set_Desired(Direction(building->Center_Coord()));
+                    SecondaryFacing.Set_Desired(PrimaryFacing.Desired());
+                    Set_Speed(0xFF);
                     if (Transmit_Message(RADIO_HELLO, building) == RADIO_ROGER) {
-                        Set_Speed(0xFF);
-                        Assign_Destination(building->As_Target());
                         if (Team.Is_Valid()) {
                             Team->Target = NavCom;
                         }
                         Status = FLY_TO_AIRSTRIP;
                     }
-                }
-
-                if (Status == PICK_AIRSTRIP) {
-                    // No airstrip available — bail. (TD checks STRUCTF_AIRSTRIP
-                    // in ActiveBScan; we leave that check out since our TDAFLD
-                    // is Logic=WEAP-aliased and won't appear in the AIRSTRIP
-                    // bitmask anyway. If radio contact dropped, just retreat.)
+                } else {
+                    // No airstrip at all → retreat off-map (TD source intent).
                     Assign_Mission(MISSION_RETREAT);
-                    PrimaryFacing.Set_Desired(Random_Pick(DIR_N, DIR_MAX));
-                    SecondaryFacing.Set_Desired(PrimaryFacing.Desired());
-                    return (TICKS_PER_SECOND * 3);
+                    return (TICKS_PER_SECOND);
                 }
             } else {
                 Status = FLY_TO_AIRSTRIP;
