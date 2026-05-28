@@ -4,7 +4,21 @@ All notable changes to this mod will be documented here.
 
 This project follows a `version_high.version_low.patch` scheme matching the `ccmod.json` fields.
 
-## [Unreleased]
+## [0.50] — 2026-05-28
+
+### Classic graphics mode — TD sprites + Obelisk laser now render correctly
+
+- TD-sourced building SHPs in `TFASSETS.MIX` are palette-remapped at pack time (TD house-colour range 176–191 → RA 80–95 positional, closest-colour for the rest), so classic graphics mode renders correct TD colours with house colour following the player. New offline tooling: `scripts/shptools.py` (Westwood LCW/Format80 codec + SHP decode/remap/re-encode) and `scripts/ra_mix_extract.py` (reads RA's encrypted, nested mixes to source the palette). Resolves the long-deferred "Format80 codec + palette remap" item. Canonical doc: `docs/classic-mode-palette-remap.md`.
+- Obelisk laser beam now renders **red** (was green) in both classic and Remastered modes — TD's red beam indices `0x7D`/`0x7F` are green under RA's palette; remapped to `0xD8`/`0xE6` via the same TD→RA closest-colour table.
+
+### TD-authentic building placement audio
+
+- GDI/Nod buildings now slam down with TD's `HVYDOOR1` instead of RA's `PLACBLDG` (`VOC_TD_PLACE_BUILDING_DOWN`, type-gated for `STRUCT_TD*`; WAVs bundled in `Data/AUDIO/`). RA factions unchanged. Documented in `docs/building-sound-routing.md`.
+- Credit-tick TD routing investigated and ruled out: the tick is launcher-driven (the DLL's `credits.cpp` never runs in `REMASTER_BUILD`), so it can't be faction-routed — left vanilla.
+
+### Dev toggles disabled for release
+
+- Instant-build (GDI/Nod ~1s build time) and skirmish reveal-all-map both flipped off (`#if 0`, marked `TF DEV TOGGLE`). Release ships with normal build times and shroud on.
 
 ### TDSAM full TD port — 8-state launcher (M3 Tier 2 complete)
 
