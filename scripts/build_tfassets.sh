@@ -6,19 +6,36 @@
 # so adding a new separated building means appending one line below and
 # re-running.
 #
+# Each TD SHP is palette-remapped for RA classic-graphics mode before
+# packing: TD's house-colour range (176-191) is moved onto RA's (80-95) so
+# the engine recolours it per player, and every other index is matched to
+# RA's nearest palette colour. Without this, TD sprites render with wrong
+# colours in classic mode (the bug Reilsss/EMC never solved).
+#
 # Run: bash scripts/build_tfassets.sh
 set -euo pipefail
 
-CONQUER="${HOME}/.steam/steam/steamapps/common/CnCRemastered/Data/CNCDATA/TIBERIAN_DAWN/CD1/CONQUER.MIX"
+CNCDATA="${HOME}/.steam/steam/steamapps/common/CnCRemastered/Data/CNCDATA"
+CONQUER="${CNCDATA}/TIBERIAN_DAWN/CD1/CONQUER.MIX"
+TD_PAL="${CNCDATA}/TIBERIAN_DAWN/CD1/TEMPERAT.PAL"
+REDALERT="${CNCDATA}/RED_ALERT/CD1/REDALERT.MIX"
 OUTMIX="resources/remaster_mods/Vanilla_RA/CCDATA/TFASSETS.MIX"
 TMPDIR="$(mktemp -d -t tfassets-XXXXXX)"
 trap "rm -rf '$TMPDIR'" EXIT
 
-if [[ ! -f "$CONQUER" ]]; then
-    echo "error: CONQUER.MIX not found at $CONQUER" >&2
-    echo "       (need a local Steam install of C&C Remastered Collection)" >&2
-    exit 1
-fi
+for f in "$CONQUER" "$TD_PAL" "$REDALERT"; do
+    if [[ ! -f "$f" ]]; then
+        echo "error: required game file not found: $f" >&2
+        echo "       (need a local Steam install of C&C Remastered Collection)" >&2
+        exit 1
+    fi
+done
+
+# RA's temperate palette is the closest-colour remap target. It lives inside
+# the encrypted, nested REDALERT.MIX container, so use the dedicated reader.
+RA_PAL="${TMPDIR}/RA_TEMPERAT.PAL"
+python3 -W ignore scripts/ra_mix_extract.py extract "$REDALERT" TEMPERAT.PAL "$TMPDIR" >/dev/null
+mv "${TMPDIR}/TEMPERAT.PAL" "$RA_PAL"
 
 # Canonical list of TD SHPs we ship in TFASSETS.MIX. Format:
 #   TD-source-name:TD-prefixed-mod-name
@@ -75,13 +92,15 @@ ENTRIES=(
     "TMPLMAKE.SHP:TDTMPLMAKE.SHP"
 )
 
-# Extract each SHP from CONQUER.MIX into the temp dir.
+# Extract each SHP from CONQUER.MIX, palette-remap it for RA classic mode,
+# then pack the remapped copy under its TD-prefixed name.
 PACK_ARGS=()
 for entry in "${ENTRIES[@]}"; do
     src="${entry%%:*}"
     dst="${entry##*:}"
     python3 scripts/mix_tools.py extract "$CONQUER" "$src" "$TMPDIR" >/dev/null
-    PACK_ARGS+=("$TMPDIR/$src:$dst")
+    python3 scripts/shptools.py remap "$TMPDIR/$src" "$TMPDIR/remap_$src" "$TD_PAL" "$RA_PAL"
+    PACK_ARGS+=("$TMPDIR/remap_$src:$dst")
 done
 
 # Repack into TFASSETS.MIX with TD-prefix renames.

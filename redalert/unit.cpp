@@ -1673,7 +1673,12 @@ bool UnitClass::Try_To_Deploy(void)
                     **	MCV.
                     */
                     if (building->House == PlayerPtr) {
-                        Sound_Effect(VOC_PLACE_BUILDING_DOWN, Center_Coord());
+                        // Tiberian Factions mod: TD con-yard (TDFACT etc.) slams
+                        // down with TD's HVYDOOR1 instead of RA's PLACBLDG.
+                        bool td_bldg = (building->Class->Type >= STRUCT_TDOBLI
+                                        && building->Class->Type < STRUCT_COUNT);
+                        Sound_Effect(td_bldg ? VOC_TD_PLACE_BUILDING_DOWN : VOC_PLACE_BUILDING_DOWN,
+                                     Center_Coord());
                     } else {
                         building->IsToRebuild = true;
                         building->IsToRepair = true;

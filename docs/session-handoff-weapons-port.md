@@ -4,6 +4,11 @@
 **Working tree:** clean (all changes committed)
 **Latest commit:** `classic-mode: ship TD SHPs via TFASSETS.MIX (palette remap deferred)`
 
+> **OUTDATED on the palette point (2026-05-28):** "Door 3" below (Format80 codec +
+> closest-colour palette remap) is **DONE and shipped** — see
+> `classic-mode-palette-remap.md`. Ignore the "deferred / 95% / classic-mode
+> polish" notes in this historical handoff. The rest stands as a point-in-time record.
+
 ---
 
 ## What landed since the last handoff

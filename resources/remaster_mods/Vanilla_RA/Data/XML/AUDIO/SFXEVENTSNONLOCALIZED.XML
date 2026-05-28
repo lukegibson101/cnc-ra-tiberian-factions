@@ -6122,6 +6122,21 @@ WARNING: This file was written by [PETROGLYPH\Mike_Legg] using the Petroglyph SF
     </SampleNamesList>
   </SFXEvent>
 
+  <!-- TD building placement slam (HVYDOOR1) — GDI/Nod, replaces RA PLACBLDG -->
+  <SFXEvent Name="RAC_SFX_HVYDOOR1" Preset="_PRESET_MD_MOBIUS_2D">
+    <IsPreset> False </IsPreset>
+    <SampleNamesList>
+      <entry> TDC_SFX_HVYDOOR1.WAV </entry>
+    </SampleNamesList>
+  </SFXEvent>
+
+  <SFXEvent Name="RAR_SFX_HVYDOOR1" Preset="_PRESET_MD_MOBIUS_2D">
+    <IsPreset> False </IsPreset>
+    <SampleNamesList>
+      <entry> TDR_SFX_HVYDOOR1.WAV </entry>
+    </SampleNamesList>
+  </SFXEvent>
+
 
   <!-- TDChainGun burst (TDGTWR Guard Tower) -->
   <SFXEvent Name="RAC_SFX_GUN8" Preset="_PRESET_MD_MOBIUS_2D">

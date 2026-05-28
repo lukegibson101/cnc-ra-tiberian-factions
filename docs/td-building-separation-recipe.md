@@ -154,7 +154,7 @@ python3 scripts/mix_tools.py pack \
 
 `MFCD::Retrieve` finds the new SHPs via `Init_Heap()`'s standard load loop (`bdata.cpp:3185-3187`). No engine changes per-building.
 
-**Classic-mode caveat:** TD SHPs use TD's PALETTE.PAL color indices. Rendered with RA's PALETTE.PAL → mild color mismatch (looks ~95% right). Fix is a one-time `mix_tools.py` extension implementing Westwood Format80 codec + closest-color remap; deferred to a "classic-mode SHP polish" iteration. Remastered mode unaffected — launcher intercepts before SHP rendering and uses our TGA tileset.
+**Classic-mode caveat: RESOLVED 2026-05-28 — see `classic-mode-palette-remap.md`.** TD SHPs are now palette-remapped at pack time in `build_tfassets.sh` (TD house range 176–191 → RA 80–95, closest-colour for the rest), so classic mode renders correct colours with house colour following the player. Remastered mode unaffected — launcher uses our TGA tileset.
 
 **Overlay SHPs (war-factory-style door layers):** if the building renders in two layers (body + animated overlay like WEAP+WEAP2), ship BOTH SHPs into TFASSETS.MIX (e.g. `WEAP2.SHP:TDWEAP2.SHP`) **and** add a TD-specific static pointer (`BuildingTypeClass::WarFactoryOverlayTd` or similar) loaded in `One_Time`. RA's existing `WarFactoryOverlay` static is hardcoded to load `WEAP2.SHP` and is drawn for every STRUCT_WEAP-style building — without a per-type dispatch in `Draw_It`, RA's overlay renders on top of TD's body. Plus: the TGA tileset XML for the overlay must have shape entries matching TD's `Open_Door(rate, stages)` call (see playbook §3.15). Worked example: TDWEAP2 in `5c0c17e`.
 
@@ -231,5 +231,5 @@ These come up when the catalogue extends past TDOBLI:
 - **Unit types (TD harvester, MCV, C-17, infantry, vehicles)** — same separation philosophy, parallel recipe needed for `UnitTypeClass` / `InfantryTypeClass` / `AircraftTypeClass`. Will fork a sibling recipe doc when unit work starts.
 - **HouseClass build orders** — RA's AI base-build sequences are STRUCT_*-indexed. Adding STRUCT_TDxxxx entries needs parallel AI sequences for HOUSE_GOOD / HOUSE_BAD. Covered in `docs/building-separation-plan.md §3.1 H2`.
 - **EVA voice routing** — faction-aware VoxType (parallel to VocType). Defer to dedicated work after first wave of buildings.
-- **Format80 codec + palette remap** — pixel-perfect classic mode. Single one-shot iteration applied to every TD-sourced SHP at once.
+- **Format80 codec + palette remap** — ✅ DONE 2026-05-28 (`scripts/shptools.py` + `build_tfassets.sh`, see `classic-mode-palette-remap.md`). Classic mode renders correct TD colours with house colour following the player.
 - **Classic-mode TFASSETS.MIX append mode** — `mix_tools.py pack` currently rebuilds; future `--append` would add per-building incrementally.

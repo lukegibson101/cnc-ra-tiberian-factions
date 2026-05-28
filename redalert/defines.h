@@ -3449,6 +3449,7 @@ typedef enum VocType : short
     VOC_TD_ION1,         // TD Ion Cannon beam-strike SFX (ION1 — ANIM_TD_ION_CANNON)
     VOC_TD_MOVEOUT,      // TD infantry "movin' out" (MOVOUT1) — GDI/Nod move-order voice
     VOC_TD_UNIT1,        // TD "unit reporting" (UNIT1) — GDI/Nod vehicle select voice (radio take)
+    VOC_TD_PLACE_BUILDING_DOWN, // TD building slam-down (HVYDOOR1) — GDI/Nod placement, replaces RA's PLACBLDG
 
     VOC_COUNT,
     VOC_FIRST = 0

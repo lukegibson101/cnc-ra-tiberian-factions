@@ -225,9 +225,14 @@ The original D1.1 plan assumed "per-entry ImageData/BuildupData load fixes the s
 
 The TD-Assets workshop docs ([Steam Workshop 3003163891](https://steamcommunity.com/sharedfiles/filedetails/?id=3003163891)) confirm this is the EMC-canonical approach: *"The mod does NOT automatically scale sprites... you must set the dimensions (width, height) manually."* Example shown: `ShapeSize=48,72` for HAND (2×3 foundation). DontCryJustDie's discussion thread has authoritative shape sizes for the full TD catalogue; XCC Mixer can extract the same data from TD's `CONQUER.MIX`. Subscribed to DontCryJustDie's example mod (3003174395) for canonical rules.ini patterns when we do the catalogue rollout.
 
-### Known limitation — classic graphics mode
+### Classic graphics mode — RESOLVED 2026-05-28
 
-Mod entries still render their **donor sprites** in classic mode (POWR for TDNUKE, APWR for TDNUK2) because the legacy SHP renderer reads `ImageData` and our `ImageData` resolves to donor data (or NULL). Real fix would be bundling TD's `NUKE.SHP`/`NUK2.SHP`/etc. in a mod-specific mixfile (extract from `CONQUER.MIX`, register via `new MFCD("tiberian_factions.mix")` in init). **Deferred** — Remastered is the play target, LAN mode forces Remastered, low impact. README/CHANGELOG should note "Remastered graphics mode required for correct TD sprites."
+Separated TD buildings ship their own TD SHPs in `TFASSETS.MIX`, and those SHPs
+are now **palette-remapped** for RA's palette at pack time — see
+`classic-mode-palette-remap.md`. Classic mode renders correct TD sprites with
+house colour following the player; the Obelisk laser is red. (The old donor-sprite
+fallback only applied to entries that were never fully separated.) Remastered mode
+uses the TGA tileset and was always correct.
 
 ### Next session — D1.2 full BScan replace
 

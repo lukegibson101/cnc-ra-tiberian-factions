@@ -3706,7 +3706,13 @@ bool HouseClass::Place_Object(RTTIType type, CELL cell)
                         Abandon_Production(type);
 
                         if (PlayerPtr == this) {
-                            Sound_Effect(VOC_PLACE_BUILDING_DOWN);
+                            // Tiberian Factions mod: TD buildings slam down with
+                            // TD's HVYDOOR1 instead of RA's PLACBLDG (mirrors the
+                            // VOC_TD_CONSTRUCTION dispatch in building.cpp).
+                            bool td_bldg = (tech->What_Am_I() == RTTI_BUILDING
+                                            && ((BuildingClass*)tech)->Class->Type >= STRUCT_TDOBLI
+                                            && ((BuildingClass*)tech)->Class->Type < STRUCT_COUNT);
+                            Sound_Effect(td_bldg ? VOC_TD_PLACE_BUILDING_DOWN : VOC_PLACE_BUILDING_DOWN);
                             Map.Set_Cursor_Shape(0);
                             Map.PendingObjectPtr = 0;
                             Map.PendingObject = 0;

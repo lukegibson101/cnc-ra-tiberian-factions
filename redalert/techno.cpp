@@ -3593,11 +3593,16 @@ bool TechnoClass::Evaluate_Object(ThreatType method,
             x1 += Map.TacPixelX;
             y += Map.TacPixelY;
             y1 += Map.TacPixelY;
-            // Three lines: two outer at color 0x7D (slightly offset for
-            // visible thickness) and one center at 0x7F (brightest core).
-            Lines[0][0] = x + 1; Lines[0][1] = y; Lines[0][2] = x1; Lines[0][3] = y1; Lines[0][4] = 0x7D;
-            Lines[1][0] = x - 1; Lines[1][1] = y; Lines[1][2] = x1; Lines[1][3] = y1; Lines[1][4] = 0x7D;
-            Lines[2][0] = x;     Lines[2][1] = y; Lines[2][2] = x1; Lines[2][3] = y1; Lines[2][4] = 0x7F;
+            // Three lines: two outer (offset for visible thickness) and one
+            // bright center core. TD's beam uses palette indices 0x7D/0x7F
+            // (red in TD's PALETTE.CPS), but those indices are GREEN in RA's
+            // palette — both the classic LogicPage draw and the Remastered
+            // launcher render the line through RA's palette. Remapped to the
+            // RA indices whose RGB matches TD's red (0x7D->0xD8, 0x7F->0xE6)
+            // via the TD->RA closest-colour table (scripts/shptools.py).
+            Lines[0][0] = x + 1; Lines[0][1] = y; Lines[0][2] = x1; Lines[0][3] = y1; Lines[0][4] = 0xD8;
+            Lines[1][0] = x - 1; Lines[1][1] = y; Lines[1][2] = x1; Lines[1][3] = y1; Lines[1][4] = 0xD8;
+            Lines[2][0] = x;     Lines[2][1] = y; Lines[2][2] = x1; Lines[2][3] = y1; Lines[2][4] = 0xE6;
             LineCount = 3;
             LineFrame = 0;
             LineMaxFrames = 5;
