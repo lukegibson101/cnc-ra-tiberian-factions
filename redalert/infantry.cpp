@@ -2557,6 +2557,16 @@ void InfantryClass::Response_Select(void)
         Sound_Effect(response, fixed(1), ID + 1);
 
     } else {
+        // Tiberian Factions: GDI/Nod (HOUSE_GOOD/HOUSE_BAD) generic infantry use
+        // the TD passive select voices ("yes sir / reporting / awaiting orders /
+        // ready"). Special RA units (Tanya, dog, ...) aren't in their roster, so
+        // a blanket faction check here is safe. Order voices: Response_Move/Attack.
+        if (PlayerPtr->ActLike == HOUSE_GOOD || PlayerPtr->ActLike == HOUSE_BAD) {
+            static VocType _td_select[] = {VOC_YESSIR, VOC_REPORT, VOC_AWAIT, VOC_READY};
+            Sound_Effect(_td_select[Sim_Random_Pick(0, ARRAY_SIZE(_td_select) - 1)],
+                         fixed(1), ID + 1, 0, PlayerPtr->ActLike);
+            return;
+        }
         static VocType _eng_response[] = {VOC_ENG_YES, VOC_ENG_ENG};
         static VocType _ein_response[] = {VOC_E_AH};
         static VocType _dog_response[] = {VOC_DOG_YES};
@@ -2682,6 +2692,15 @@ void InfantryClass::Response_Move(void)
         Sound_Effect(response, fixed(1), ID + 1);
 
     } else {
+        // Tiberian Factions: GDI/Nod move-order voices (active confirmations,
+        // including "movin' out"). See Response_Select for rationale.
+        if (PlayerPtr->ActLike == HOUSE_GOOD || PlayerPtr->ActLike == HOUSE_BAD) {
+            static VocType _td_move[] = {VOC_ACKNOWL, VOC_AFFIRM, VOC_RIGHT_AWAY,
+                                         VOC_ROGER, VOC_UGOTIT, VOC_NO_PROB, VOC_TD_MOVEOUT};
+            Sound_Effect(_td_move[Sim_Random_Pick(0, ARRAY_SIZE(_td_move) - 1)],
+                         fixed(1), ID + 1, 0, PlayerPtr->ActLike);
+            return;
+        }
         static VocType _eng_response[] = {VOC_ENG_AFFIRM, VOC_ENG_AFFIRM};
         static VocType _ein_response[] = {VOC_E_OK, VOC_E_YES};
         static VocType _dog_response[] = {VOC_DOG_BARK};
@@ -2813,6 +2832,15 @@ void InfantryClass::Response_Attack(void)
         Sound_Effect(response, fixed(1), ID + 1);
 
     } else {
+        // Tiberian Factions: GDI/Nod attack-order voices (active confirmations,
+        // no "movin' out"). See Response_Select for rationale.
+        if (PlayerPtr->ActLike == HOUSE_GOOD || PlayerPtr->ActLike == HOUSE_BAD) {
+            static VocType _td_attack[] = {VOC_ACKNOWL, VOC_AFFIRM, VOC_RIGHT_AWAY,
+                                           VOC_ROGER, VOC_UGOTIT, VOC_NO_PROB};
+            Sound_Effect(_td_attack[Sim_Random_Pick(0, ARRAY_SIZE(_td_attack) - 1)],
+                         fixed(1), ID + 1, 0, PlayerPtr->ActLike);
+            return;
+        }
         static VocType _eng_response[] = {VOC_ENG_AFFIRM, VOC_ENG_AFFIRM};
         static VocType _dog_response[] = {VOC_DOG_GROWL2};
         static VocType _ein_response[] = {VOC_E_OK, VOC_E_YES};

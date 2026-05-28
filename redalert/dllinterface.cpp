@@ -2626,6 +2626,66 @@ void DLLExportClass::On_Sound_Effect(const HouseClass* player_ptr,
                 }
             }
         }
+
+        // Tiberian Factions: per-faction unit-voice + credit-tick dispatch.
+        // GDI/Nod (ActLike HOUSE_GOOD/HOUSE_BAD) get TD unit acknowledgments
+        // and the TD credit-counter tick; Allied/Soviet keep RA's voices
+        // (.V0x/.R0x) and CASHUP1/CASHDN1. Mirrors the radar/EVA SpeechTD
+        // pattern. Voice events are registered in SFXEVENTSLOCALIZED.XML as
+        // RAC_/RAR_SFX_TD<NAME>.V0x -> base TDC_/TDR_SFX_UNT_<NAME>.V0x assets;
+        // credit ticks in SFXEVENTSNONLOCALIZED.XML as RAC_/RAR_SFX_TONE15/16.
+        if (player_ptr != NULL
+            && (player_ptr->ActLike == HOUSE_GOOD || player_ptr->ActLike == HOUSE_BAD)) {
+            const char* td_base = NULL;
+            switch (sound_effect_index) {
+            case VOC_ACKNOWL:    td_base = "TDACKNO";   break;
+            case VOC_REPORT:     td_base = "TDREPORT1"; break;
+            case VOC_YESSIR:     td_base = "TDYESSIR1"; break;
+            case VOC_READY:      td_base = "TDREADY";   break;
+            case VOC_AWAIT:      td_base = "TDAWAIT1";  break;
+            case VOC_ROGER:      td_base = "TDROGER";   break;
+            case VOC_RIGHT_AWAY: td_base = "TDRITAWAY"; break;
+            case VOC_UGOTIT:     td_base = "TDUGOTIT";  break;
+            case VOC_AFFIRM:     td_base = "TDAFFIRM1"; break;
+            case VOC_NO_PROB:    td_base = "TDNOPROB";  break;
+            case VOC_TD_MOVEOUT: td_base = "TDMOVOUT1"; break;
+            default:             break;
+            }
+            if (td_base != NULL) {
+                // TD ships only the .V01/.V03 takes; RA fires these responses
+                // with variation = ID+1 (positive). Force the V-variant
+                // (never the .R0x Soviet ext the upstream path computed).
+                const char* vext = ((variation % 2) != 0) ? ".V01" : ".V03";
+                char td_name[16];
+                snprintf(td_name, sizeof(td_name), "%s%s", td_base, vext);
+                strncpy(new_event.SoundEffect.SoundEffectName, td_name, 16);
+                new_event.SoundEffect.SoundEffectName[15] = '\0';
+            } else if (sound_effect_index == VOC_MONEY_UP) {
+                strncpy(new_event.SoundEffect.SoundEffectName, "TONE15", 16);
+                new_event.SoundEffect.SoundEffectName[15] = '\0';
+            } else if (sound_effect_index == VOC_MONEY_DOWN) {
+                strncpy(new_event.SoundEffect.SoundEffectName, "TONE16", 16);
+                new_event.SoundEffect.SoundEffectName[15] = '\0';
+            }
+
+#if 0
+            // Diagnostic (flip to 1 if the ear-check finds a silent/RA voice):
+            // logs which TD asset name we dispatched. Kept stubbed to avoid
+            // per-voice file I/O in the shipping build (feedback-keep-diagnostics-until-v1).
+            const char* up = getenv("USERPROFILE");
+            if (up != NULL) {
+                char path[512];
+                snprintf(path, sizeof(path), "%s/Documents/CnCRemastered/tf_voice_dispatch.log", up);
+                FILE* f = fopen(path, "a");
+                if (f != NULL) {
+                    fprintf(f, "[voice] sfx_idx=%d actlike=%d var=%d -> name=%s\n",
+                            sound_effect_index, (int)player_ptr->ActLike, variation,
+                            new_event.SoundEffect.SoundEffectName);
+                    fclose(f);
+                }
+            }
+#endif
+        }
     } else {
         strncpy(new_event.SoundEffect.SoundEffectName, "BADINDEX", 16);
         new_event.SoundEffect.SoundEffectPriority = -1;

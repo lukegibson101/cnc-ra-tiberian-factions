@@ -11710,4 +11710,494 @@
       <Priority> 2 </Priority>
    </LocalizedSFXEvent>
 
+
+   <!-- Tiberian Factions: TD unit-voice aliases for GDI/Nod (HOUSE_GOOD/HOUSE_BAD). DLL On_Sound_Effect sends TD<NAME>.V0x; launcher prepends RAC_/RAR_. NOPROB.V03 aliases the .V02 take (base has no V03 asset). -->
+   <LocalizedSFXEvent Name="RAC_SFX_TDACKNO.V01" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDC_SFX_UNT_ACKNO.V01_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDC_SFX_ACKNO.V01 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAR_SFX_TDACKNO.V01" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDR_SFX_UNT_ACKNO.V01_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDR_SFX_ACKNO.V01 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAC_SFX_TDACKNO.V03" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDC_SFX_UNT_ACKNO.V03_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDC_SFX_ACKNO.V03 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAR_SFX_TDACKNO.V03" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDR_SFX_UNT_ACKNO.V03_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDR_SFX_ACKNO.V03 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAC_SFX_TDREPORT1.V01" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDC_SFX_UNT_REPORT1.V01_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDC_SFX_REPORT1.V01 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAR_SFX_TDREPORT1.V01" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDR_SFX_UNT_REPORT1.V01_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDR_SFX_REPORT1.V01 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAC_SFX_TDREPORT1.V03" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDC_SFX_UNT_REPORT1.V03_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDC_SFX_REPORT1.V03 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAR_SFX_TDREPORT1.V03" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDR_SFX_UNT_REPORT1.V03_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDR_SFX_REPORT1.V03 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAC_SFX_TDYESSIR1.V01" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDC_SFX_UNT_YESSIR1.V01_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDC_SFX_YESSIR1.V01 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAR_SFX_TDYESSIR1.V01" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDR_SFX_UNT_YESSIR1.V01_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDR_SFX_YESSIR1.V01 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAC_SFX_TDYESSIR1.V03" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDC_SFX_UNT_YESSIR1.V03_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDC_SFX_YESSIR1.V03 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAR_SFX_TDYESSIR1.V03" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDR_SFX_UNT_YESSIR1.V03_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDR_SFX_YESSIR1.V03 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAC_SFX_TDREADY.V01" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDC_SFX_UNT_READY.V01_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDC_SFX_READY.V01 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAR_SFX_TDREADY.V01" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDR_SFX_UNT_READY.V01_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDR_SFX_READY.V01 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAC_SFX_TDREADY.V03" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDC_SFX_UNT_READY.V03_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDC_SFX_READY.V03 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAR_SFX_TDREADY.V03" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDR_SFX_UNT_READY.V03_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDR_SFX_READY.V03 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAC_SFX_TDAWAIT1.V01" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDC_SFX_UNT_AWAIT1.V01_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDC_SFX_AWAIT1.V01 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAR_SFX_TDAWAIT1.V01" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDR_SFX_UNT_AWAIT1.V01_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDR_SFX_AWAIT1.V01 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAC_SFX_TDAWAIT1.V03" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDC_SFX_UNT_AWAIT1.V03_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDC_SFX_AWAIT1.V03 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAR_SFX_TDAWAIT1.V03" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDR_SFX_UNT_AWAIT1.V03_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDR_SFX_AWAIT1.V03 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAC_SFX_TDROGER.V01" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDC_SFX_UNT_ROGER.V01_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDC_SFX_ROGER.V01 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAR_SFX_TDROGER.V01" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDR_SFX_UNT_ROGER.V01_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDR_SFX_ROGER.V01 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAC_SFX_TDROGER.V03" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDC_SFX_UNT_ROGER.V03_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDC_SFX_ROGER.V03 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAR_SFX_TDROGER.V03" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDR_SFX_UNT_ROGER.V03_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDR_SFX_ROGER.V03 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAC_SFX_TDRITAWAY.V01" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDC_SFX_UNT_RITAWAY.V01_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDC_SFX_RITAWAY.V01 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAR_SFX_TDRITAWAY.V01" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDR_SFX_UNT_RITAWAY.V01_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDR_SFX_RITAWAY.V01 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAC_SFX_TDRITAWAY.V03" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDC_SFX_UNT_RITAWAY.V03_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDC_SFX_RITAWAY.V03 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAR_SFX_TDRITAWAY.V03" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDR_SFX_UNT_RITAWAY.V03_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDR_SFX_RITAWAY.V03 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAC_SFX_TDUGOTIT.V01" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDC_SFX_UNT_UGOTIT.V01_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDC_SFX_UGOTIT.V01 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAR_SFX_TDUGOTIT.V01" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDR_SFX_UNT_UGOTIT.V01_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDR_SFX_UGOTIT.V01 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAC_SFX_TDUGOTIT.V03" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDC_SFX_UNT_UGOTIT.V03_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDC_SFX_UGOTIT.V03 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAR_SFX_TDUGOTIT.V03" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDR_SFX_UNT_UGOTIT.V03_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDR_SFX_UGOTIT.V03 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAC_SFX_TDAFFIRM1.V01" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDC_SFX_UNT_AFFIRM1.V01_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDC_SFX_AFFIRM1.V01 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAR_SFX_TDAFFIRM1.V01" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDR_SFX_UNT_AFFIRM1.V01_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDR_SFX_AFFIRM1.V01 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAC_SFX_TDAFFIRM1.V03" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDC_SFX_UNT_AFFIRM1.V03_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDC_SFX_AFFIRM1.V03 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAR_SFX_TDAFFIRM1.V03" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDR_SFX_UNT_AFFIRM1.V03_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDR_SFX_AFFIRM1.V03 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAC_SFX_TDNOPROB.V01" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDC_SFX_UNT_NOPROB.V01_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDC_SFX_NOPROB.V01 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAR_SFX_TDNOPROB.V01" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDR_SFX_UNT_NOPROB.V01_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDR_SFX_NOPROB.V01 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAC_SFX_TDNOPROB.V03" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDC_SFX_UNT_NOPROB.V02_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDC_SFX_NOPROB.V02 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAR_SFX_TDNOPROB.V03" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDR_SFX_UNT_NOPROB.V02_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDR_SFX_NOPROB.V02 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+
+
+   <!-- Tiberian Factions: TD unit-voice aliases for GDI/Nod (HOUSE_GOOD/HOUSE_BAD). DLL On_Sound_Effect sends TD<NAME>.V0x; launcher prepends RAC_/RAR_. NOPROB.V03 aliases the .V02 take (base has no V03 asset). -->
+   <LocalizedSFXEvent Name="RAC_SFX_TDMOVOUT1.V01" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDC_SFX_UNT_MOVOUT1.V01_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDC_SFX_MOVOUT1.V01 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAR_SFX_TDMOVOUT1.V01" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDR_SFX_UNT_MOVOUT1.V01_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDR_SFX_MOVOUT1.V01 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAC_SFX_TDMOVOUT1.V03" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDC_SFX_UNT_MOVOUT1.V03_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDC_SFX_MOVOUT1.V03 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+   <LocalizedSFXEvent Name="RAR_SFX_TDMOVOUT1.V03" Preset="_PRESET_UR">
+      <SampleNamesList>
+         <entry> TDR_SFX_UNT_MOVOUT1.V03_EN-US.MP3 </entry>
+      </SampleNamesList>
+      <LocalizedTextIDs>
+         <entry> TEXT_SFX_TDR_SFX_MOVOUT1.V03 </entry>
+      </LocalizedTextIDs>
+      <MinVolume> 100 </MinVolume>
+      <MaxVolume> 100 </MaxVolume>
+      <Priority> 2 </Priority>
+   </LocalizedSFXEvent>
+
 </LocalizedSFXEvents>
