@@ -1373,7 +1373,14 @@ bool BuildingClass::Unlimbo(COORDINATE coord, DirType dir)
         // buildings preserve their owner's ActLike rather than getting
         // forced into a side placeholder.
         int both_ra_sides = HOUSEF_ALLIES | HOUSEF_SOVIET;
-        if ((Class->Ownable & both_ra_sides) != both_ra_sides) {
+        // A building ownable by BOTH TD factions (shared ConYard / power /
+        // refinery etc., Owner=GoodGuy,BadGuy) must also preserve its owner's
+        // ActLike. Otherwise the GDI-before-Nod branch order below forces every
+        // shared building to HOUSE_GOOD, so a Nod player's ConYard produces a
+        // GDI sidebar (and shared buildings get mis-flagged as captured).
+        int both_td_sides = HOUSEF_GDI | HOUSEF_NOD;
+        if ((Class->Ownable & both_ra_sides) != both_ra_sides
+            && (Class->Ownable & both_td_sides) != both_td_sides) {
             if (Class->Ownable & HOUSEF_ALLIES) {
                 ActLike = HOUSE_GREECE; // Allied placeholder
             } else if (Class->Ownable & HOUSEF_SOVIET) {
