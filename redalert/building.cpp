@@ -6519,7 +6519,16 @@ void BuildingClass::Read_INI(CCINIClass& ini)
             }
 
             if (HouseClass::As_Pointer(bhouse) != NULL) {
-                b = new BuildingClass(classid, bhouse);
+                // Tiberian Factions fix 2026-05-29: construct via the pointer
+                // form (the BuildingTypeClass*), exactly as Create_One_Of does
+                // for player/factory builds. The StructType delegating ctor
+                // (BuildingClass(StructType,...) -> BuildingClass(ptr,...)) left
+                // scenario-placed buildings with IsActive=0 at scenario-load
+                // time, so Unlimbo's Mark(MARK_DOWN) bailed (ObjectClass::Mark
+                // requires IsActive) and every pre-placed [STRUCTURES] entry was
+                // deleted — campaign M1 (both sides) had no buildings. Calling
+                // the pointer ctor directly matches the known-good build path.
+                b = new BuildingClass(BuildingTypes.Ptr((int)classid), bhouse);
                 if (b) {
 
                     TriggerTypeClass* tp = TriggerTypeClass::From_Name(trigname);
