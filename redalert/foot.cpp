@@ -706,6 +706,7 @@ int FootClass::Mission_Hunt(void)
     } else {
         if (What_Am_I() == RTTI_INFANTRY
             && (((InfantryTypeClass const&)Class_Of()).Type == INFANTRY_RENOVATOR
+                || ((InfantryTypeClass const&)Class_Of()).Type == INFANTRY_TDE6 // TF: GDI/Nod engineer
                 || ((InfantryTypeClass const&)Class_Of()).Type == INFANTRY_THIEF)) {
             Assign_Destination(TarCom);
             Assign_Mission(MISSION_CAPTURE);

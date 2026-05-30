@@ -264,6 +264,24 @@ struct SoundEffectNameStruct
     {"TOSS1", 1, IN_NOVAR},     // VOC_TD_TOSS — TD Grenadier toss (WEAPON_TDGRENADE Report=), routed via RAC/RAR_SFX_TOSS1
     {"BAZOOK1", 1, IN_NOVAR},   // VOC_TD_BAZOOKA — TD Rocket Soldier launch (WEAPON_TDDRAGON Report=), routed via RAC/RAR_SFX_BAZOOK1
     {"FLAMER2", 1, IN_NOVAR},   // VOC_TD_FLAMER — TD Flamethrower (WEAPON_TDFLAME Report=FLAMER2; TD VOC_FLAMER1 = file FLAMER2), routed via RAC/RAR_SFX_FLAMER2
+    {"RAMGUN2", 1, IN_NOVAR},   // VOC_TD_SNIPER — TD Commando silenced rifle (WEAPON_TDRIFLE Report=RAMGUN2), routed via RAC/RAR_SFX_RAMGUN2
+    // TD Commando (RMBO) one-liners — names are "TD"+asset so the launcher resolves
+    // RAC/RAR_SFX_TD<NAME> (registered in SFXEVENTSLOCALIZED.XML -> TDC/TDR_SFX_CMD_<NAME>_EN-US).
+    // IN_NOVAR -> no .V0x extension appended (single-take), so the name passes through clean.
+    {"TDBOMBIT1", 20, IN_NOVAR},  // VOC_TD_CMD_BOMBIT — "I've got a present for ya"
+    {"TDCMON1", 20, IN_NOVAR},    // VOC_TD_CMD_CMON — "c'mon"
+    {"TDGOTIT1", 20, IN_NOVAR},   // VOC_TD_CMD_GOTIT — "you got it"
+    {"TDKEEPEM1", 20, IN_NOVAR},  // VOC_TD_CMD_KEEPEM — "keep 'em comin'"
+    {"TDLAUGH1", 20, IN_NOVAR},   // VOC_TD_CMD_LAUGH — "hahaha"
+    {"TDLEFTY1", 20, IN_NOVAR},   // VOC_TD_CMD_LEFTY — "that was left handed"
+    {"TDNOPRBLM1", 20, IN_NOVAR}, // VOC_TD_CMD_NOPROB — "no problem"
+    {"TDONIT1", 20, IN_NOVAR},    // VOC_TD_CMD_ONIT — "I'm on it"
+    {"TDRAMYELL1", 20, IN_NOVAR}, // VOC_TD_CMD_YELL — "ahhhhh"
+    {"TDROKROLL1", 20, IN_NOVAR}, // VOC_TD_CMD_ROCK — "time to rock and roll"
+    {"TDTUFFGUY1", 20, IN_NOVAR}, // VOC_TD_CMD_TUFF — "real tough guy"
+    {"TDYEAH1", 20, IN_NOVAR},    // VOC_TD_CMD_YEAH — "yea"
+    {"TDYES1", 20, IN_NOVAR},     // VOC_TD_CMD_YES — "yes"
+    {"TDYO1", 20, IN_NOVAR},      // VOC_TD_CMD_YO — "yo"
 };
 
 //

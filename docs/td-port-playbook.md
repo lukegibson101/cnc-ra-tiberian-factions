@@ -551,6 +551,28 @@ The overlay then resolves the real `TDFLAME-<dir>` tile by IniName. **Generalise
 
 ---
 
+### 3.27 — A new ENGINEER type is INERT until added to every `INFANTRY_RENOVATOR` special-case (+ faction-conditional capture)
+
+`Infiltrate=yes` → `IsCapture` is **necessary but not sufficient**. The engineer's capture/renovate behaviour is **hardcoded to `INFANTRY_RENOVATOR`** at ~15 sites — `IsCapture` alone does nothing because the engine never reaches the generic capture path for an engineer; it dispatches on the *type*. A new engine type (e.g. `INFANTRY_TDE6`) builds, renders, paths onto the building — and then **does nothing** (falls through to the non-engineer branch). Symptom caught on TDE6, 2026-05-30: it would have shipped unable to capture.
+
+**The sites that matter for a human-player capture (add the new type at each):**
+- **Execution** — `infantry.cpp` Per_Cell_Process (`if (*this == INFANTRY_RENOVATOR)` around the renovate/capture/damage block). Without this the capture never *executes*.
+- **Cursor** — `infantry.cpp::What_Action` (`if (*this == INFANTRY_RENOVATOR && ... RTTI_BUILDING ...)`). Without this the player gets no capture cursor.
+- **AI capture-targeting** — `foot.cpp` (`Type == INFANTRY_RENOVATOR || ... THIEF` → `Assign_Mission(MISSION_CAPTURE)`).
+- The `ACTION_CAPTURE`→`MISSION_CAPTURE` mapping and `MISSION_CAPTURE` execution loop are **generic** (not type-gated), so those need no change. Bridge-repair sites (`TEMPLATE_BRIDGE`) are RA-only — **skip** them for a TD engineer (TD had no bridge repair). `grep -n INFANTRY_RENOVATOR redalert/*.cpp` to audit; the AI-preservation / survivor sites (`house.cpp`, `cell.cpp`, `building.cpp:Crew_Type`) are deferred-AI, not capture-critical.
+
+**Faction-conditional single-vs-multi capture** (a clean lever once the type is recognised). The Remaster uses RA's Aftermath **multi-engineer** capture (`Health_Ratio() <= EngineerCaptureLevel` gate → otherwise `EngineerDamage` and consume). To make **TD-faction engineers single-capture** (TD behaviour) while RA factions keep multi, gate on the engineer's **owner faction**, at both the execution and cursor health-checks:
+```cpp
+bool td_single = (House->ActLike == HOUSE_GOOD || House->ActLike == HOUSE_BAD);
+if ((td_single || tech->Health_Ratio() <= EngineerCaptureLevel) && iscapturable) { /* capture */ }
+```
+
+**Capture-only (no friendly mega-repair).** RA's RENOVATOR also mega-repairs a *friendly* building (the `House->Is_Ally(...)` branch → `Renovate()` / `ACTION_GREPAIR`). TD engineers only captured. Gate that friendly branch to `*this == INFANTRY_RENOVATOR` so the TD engineer falls through (no repair action) — at both the execution and the cursor.
+
+**Generalises:** any TD entity whose engine behaviour is dispatched by a hardcoded `INFANTRY_<X>` / `STRUCT_<X>` / `UNIT_<X>` type check (not a `TechnoTypeClass` flag) is **inert** as a new separated type until added to those checks. The C4 commando dodged this because RA *had* generalised C4 to the `IsBomber` flag — the engineer's capture was **not** generalised. Always `grep` the donor type's name across `*.cpp` before assuming a flag is enough.
+
+---
+
 ## 4. Templates to copy
 
 ### 4.1 — Bullet TD-port: add field, set on registration, dispatch

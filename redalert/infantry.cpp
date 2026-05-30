@@ -633,7 +633,10 @@ void InfantryClass::Per_Cell_Process(PCPType why)
                 tech = cellptr->Cell_Techno();
             }
             if (tech != NULL && (tech->As_Target() == NavCom || tech->As_Target() == TarCom)) {
-                if (*this == INFANTRY_RENOVATOR) {
+                // Tiberian Factions: TDE6 (GDI/Nod engineer) shares RA's engineer
+                // capture/renovate execution path. Single-vs-multi capture is decided
+                // by the faction gate below (td_single).
+                if (*this == INFANTRY_RENOVATOR || *this == INFANTRY_TDE6) {
 
                     /*
                     **	An engineer will either mega-repair a friendly or allied
@@ -646,19 +649,29 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 #else
                     if (tech->House->Is_Ally(House)) {
 #endif
-                        if (tech->Trigger.Is_Valid()) {
-                            tech->Trigger->Spring(TEVENT_PLAYER_ENTERED, this);
+                        // Tiberian Factions: TD engineers (TDE6) are capture-only — no
+                        // friendly mega-repair (TD-authentic). Only RA's RENOVATOR repairs.
+                        if (*this == INFANTRY_RENOVATOR) {
+                            if (tech->Trigger.Is_Valid()) {
+                                tech->Trigger->Spring(TEVENT_PLAYER_ENTERED, this);
+                            }
+                            tech->Renovate();
                         }
-                        tech->Renovate();
                     } else {
                         bool iscapturable = false;
                         if (tech->What_Am_I() == RTTI_BUILDING) {
                             iscapturable = tech->Can_Capture();
                         }
+                        // Tiberian Factions: TD-faction engineers (GDI/Nod, ActLike
+                        // GOOD/BAD) capture a building outright in a single use, like TD
+                        // — ignore the health gate. Allied/Soviet engineers keep RA's
+                        // Aftermath multi-engineer capture (damage to ConditionRed, then
+                        // the next engineer takes it). Gate is on the engineer's owner.
+                        bool td_single = (House->ActLike == HOUSE_GOOD || House->ActLike == HOUSE_BAD);
 #ifdef FIXIT_ENGINEER //	checked - ajw 9/28/98
-                        if (tech->Health_Ratio() <= EngineerCaptureLevel && iscapturable) {
+                        if ((td_single || tech->Health_Ratio() <= EngineerCaptureLevel) && iscapturable) {
 #else
-                        if (tech->Health_Ratio() <= Rule.ConditionRed && iscapturable) {
+                        if ((td_single || tech->Health_Ratio() <= Rule.ConditionRed) && iscapturable) {
 #endif
                             if (tech->Trigger.Is_Valid()) {
                                 tech->Trigger->Spring(TEVENT_PLAYER_ENTERED, this);
@@ -2557,6 +2570,14 @@ void InfantryClass::Response_Select(void)
         Sound_Effect(response, fixed(1), ID + 1);
 
     } else {
+        // Tiberian Factions: TD Commando (TDRMBO) speaks its iconic RAMBO one-liners,
+        // checked before the generic GDI/Nod intercept so it gets its own voice set.
+        // Single-take CMD voices (IN_NOVAR) -> RAC/RAR_SFX_TD<NAME>. Select = ready/ack.
+        if (*this == INFANTRY_TDRMBO) {
+            static VocType _cmd_select[] = {VOC_TD_CMD_YO, VOC_TD_CMD_YES, VOC_TD_CMD_YEAH, VOC_TD_CMD_ONIT};
+            Sound_Effect(_cmd_select[Sim_Random_Pick(0, ARRAY_SIZE(_cmd_select) - 1)], fixed(1), ID + 1);
+            return;
+        }
         // Tiberian Factions: GDI/Nod (HOUSE_GOOD/HOUSE_BAD) generic infantry use
         // the TD passive select voices ("yes sir / reporting / awaiting orders /
         // ready"). Special RA units (Tanya, dog, ...) aren't in their roster, so
@@ -2692,6 +2713,13 @@ void InfantryClass::Response_Move(void)
         Sound_Effect(response, fixed(1), ID + 1);
 
     } else {
+        // Tiberian Factions: TD Commando (TDRMBO) RAMBO one-liners — move = confirmations.
+        if (*this == INFANTRY_TDRMBO) {
+            static VocType _cmd_move[] = {VOC_TD_CMD_GOTIT, VOC_TD_CMD_NOPROB, VOC_TD_CMD_KEEPEM,
+                                          VOC_TD_CMD_CMON, VOC_TD_CMD_LEFTY};
+            Sound_Effect(_cmd_move[Sim_Random_Pick(0, ARRAY_SIZE(_cmd_move) - 1)], fixed(1), ID + 1);
+            return;
+        }
         // Tiberian Factions: GDI/Nod move-order voices (active confirmations,
         // including "movin' out"). See Response_Select for rationale.
         if (PlayerPtr->ActLike == HOUSE_GOOD || PlayerPtr->ActLike == HOUSE_BAD) {
@@ -2832,6 +2860,13 @@ void InfantryClass::Response_Attack(void)
         Sound_Effect(response, fixed(1), ID + 1);
 
     } else {
+        // Tiberian Factions: TD Commando (TDRMBO) RAMBO one-liners — attack = aggressive.
+        if (*this == INFANTRY_TDRMBO) {
+            static VocType _cmd_attack[] = {VOC_TD_CMD_ROCK, VOC_TD_CMD_BOMBIT, VOC_TD_CMD_YELL,
+                                            VOC_TD_CMD_LAUGH, VOC_TD_CMD_TUFF};
+            Sound_Effect(_cmd_attack[Sim_Random_Pick(0, ARRAY_SIZE(_cmd_attack) - 1)], fixed(1), ID + 1);
+            return;
+        }
         // Tiberian Factions: GDI/Nod attack-order voices (active confirmations,
         // no "movin' out"). See Response_Select for rationale.
         if (PlayerPtr->ActLike == HOUSE_GOOD || PlayerPtr->ActLike == HOUSE_BAD) {
@@ -2968,21 +3003,31 @@ ActionType InfantryClass::What_Action(ObjectClass const* object) const
     ** renovate it.
     ** However, abort the whole thing if the building is a barrel or mine.
     */
-    if (*this == INFANTRY_RENOVATOR && object->What_Am_I() == RTTI_BUILDING && House->IsPlayerControl) {
+    if ((*this == INFANTRY_RENOVATOR || *this == INFANTRY_TDE6) && object->What_Am_I() == RTTI_BUILDING
+        && House->IsPlayerControl) {
         BuildingClass const* bldg = (BuildingClass*)object;
         if (bldg->Class->IsRepairable) {
             if (House->Is_Ally(bldg)) {
-                if (bldg->Health_Ratio() == 1) {
-                    return (ACTION_NO_GREPAIR);
+                // Tiberian Factions: only RA's RENOVATOR mega-repairs friendly buildings;
+                // TD engineers (TDE6) are capture-only. Fall through to the default action
+                // for a TDE6 over a friendly building (no repair cursor).
+                if (*this == INFANTRY_RENOVATOR) {
+                    if (bldg->Health_Ratio() == 1) {
+                        return (ACTION_NO_GREPAIR);
+                    }
+                    return (ACTION_GREPAIR);
                 }
-                return (ACTION_GREPAIR);
             } else {
 
                 if (bldg->Can_Capture()) {
+                    // Tiberian Factions: TD-faction engineers (GDI/Nod) always show the
+                    // capture cursor — they take a building in one use. Allied/Soviet keep
+                    // the health-gated capture-vs-damage cursor (multi-engineer).
+                    bool td_single = (House->ActLike == HOUSE_GOOD || House->ActLike == HOUSE_BAD);
 #ifdef FIXIT_ENGINEER //	checked - ajw 9/28/98
-                    if (bldg->Health_Ratio() <= EngineerCaptureLevel) {
+                    if (td_single || bldg->Health_Ratio() <= EngineerCaptureLevel) {
 #else
-                    if (bldg->Health_Ratio() <= Rule.ConditionRed) {
+                    if (td_single || bldg->Health_Ratio() <= Rule.ConditionRed) {
 #endif
                         return (ACTION_CAPTURE);
                     }

@@ -769,6 +769,106 @@ static InfantryTypeClass const TdE5(INFANTRY_TDE5, // Infantry type number.
                                     0              // pointer to override remap table
 );
 
+// Tiberian Factions -- TD Engineer (INFANTRY_TDE6), ported from TD's E7/"E6"
+// (tiberiandawn/idata.cpp:447). GDI+Nod (TD's E6 is ownable by all houses incl.
+// GOOD/BAD). No weapon: captures buildings via rules.ini [TDE6] Infiltrate=yes
+// (IsCapture -> RA's Mission_Capture, a shared engine primitive). The table is
+// TD's EngineerDos mapped to RA's 21-action DoType order (rows 0-10 verbatim,
+// TD's death/gesture rows 22-30 -> positions 11-19, hand-to-hand dropped). No
+// fire/idle2 frames (engineer doesn't shoot). Donor INFANTRY_RENOVATOR (RA's
+// engineer) supplies ImageData/dims; the HD overlay renders the real TDE6 tileset.
+static DoInfoStruct TdEngineerDoControls[DO_COUNT] = {
+    {0, 1, 1},    // DO_STAND_READY
+    {8, 1, 1},    // DO_STAND_GUARD
+    {82, 1, 4},   // DO_PRONE
+    {16, 6, 6},   // DO_WALK
+    {0, 0, 0},    // DO_FIRE_WEAPON (engineer is unarmed)
+    {67, 2, 2},   // DO_LIE_DOWN
+    {82, 4, 4},   // DO_CRAWL
+    {114, 2, 2},  // DO_GET_UP
+    {0, 0, 0},    // DO_FIRE_PRONE (engineer is unarmed)
+    {130, 16, 0}, // DO_IDLE1
+    {0, 0, 0},    // DO_IDLE2 (TD EngineerDos has none)
+    {146, 8, 0},  // DO_GUN_DEATH
+    {154, 8, 0},  // DO_EXPLOSION_DEATH
+    {162, 8, 0},  // DO_EXPLOSION2_DEATH
+    {170, 12, 0}, // DO_GRENADE_DEATH
+    {182, 18, 0}, // DO_FIRE_DEATH
+    {200, 3, 3},  // DO_GESTURE1
+    {224, 3, 3},  // DO_SALUTE1
+    {200, 3, 3},  // DO_GESTURE2
+    {224, 3, 3},  // DO_SALUTE2
+    {0, 0, 0},    // DO_DOG_MAUL (N/A — RA's DO_ enum drops TD's hand-to-hand actions)
+};
+static InfantryTypeClass const TdE6(INFANTRY_TDE6, // Infantry type number.
+                                    TXT_E6,        // Translate name number ("Engineer"; HD display via launcher text).
+                                    "TDE6",        // INI name for infantry.
+                                    0x0035,        // Vertical offset (standard standing infantry, matches RA's E6).
+                                    0x0010,        // Primary weapon offset along centerline.
+                                    false,         // Is this a female type?
+                                    false,         // Has crawling animation frames? (TD E6: no)
+                                    false,         // Is this a civilian?
+                                    false,         // Does this unit use the override remap table?
+                                    false,         // Always use the given name for the infantry?
+                                    false,         // Theater specific graphic image?
+                                    PIP_FULL,      // Transport pip shape/color to use.
+                                    TdEngineerDoControls,
+                                    TdEngineerDoControls,
+                                    3,             // Frame of projectile launch (TD E6; moot, unarmed).
+                                    3,             // Frame of projectile launch while prone.
+                                    0              // pointer to override remap table
+);
+
+// Tiberian Factions -- TD Commando (INFANTRY_TDRMBO), ported from TD's RMBO
+// (tiberiandawn/idata.cpp:517). GDI+Nod (TD's RMBO is ownable by both). Fires
+// WEAPON_TDRIFLE -- a 125-dmg BULLET_TDBULLET (invisible "50cal") + WARHEAD_TDHOLLOW
+// (one-shots infantry, ~nil vs armor). C4 building-destroy via rules.ini [TDRMBO]
+// C4=yes (IsBomber): TD hardcodes C4 to INFANTRY_RAMBO, RA generalised it to the
+// flag -- same mechanic. PIP_COMMANDO + has-crawl. The table is TD's CommandoDos
+// mapped to RA's 21-action order (rows 0-10 verbatim, death/gesture 22-30 ->
+// 11-19). Donor INFANTRY_E1 supplies ImageData/dims; HD overlay renders TDRMBO.
+static DoInfoStruct TdCommandoDoControls[DO_COUNT] = {
+    {0, 1, 1},    // DO_STAND_READY
+    {8, 1, 1},    // DO_STAND_GUARD
+    {160, 1, 4},  // DO_PRONE
+    {16, 6, 6},   // DO_WALK
+    {64, 4, 4},   // DO_FIRE_WEAPON
+    {96, 2, 2},   // DO_LIE_DOWN
+    {112, 4, 4},  // DO_CRAWL
+    {144, 2, 2},  // DO_GET_UP
+    {160, 4, 4},  // DO_FIRE_PRONE
+    {192, 16, 0}, // DO_IDLE1
+    {208, 16, 0}, // DO_IDLE2
+    {318, 8, 0},  // DO_GUN_DEATH
+    {334, 8, 0},  // DO_EXPLOSION_DEATH
+    {334, 8, 0},  // DO_EXPLOSION2_DEATH
+    {342, 12, 0}, // DO_GRENADE_DEATH
+    {354, 18, 0}, // DO_FIRE_DEATH
+    {372, 3, 3},  // DO_GESTURE1
+    {396, 3, 3},  // DO_SALUTE1
+    {420, 3, 3},  // DO_GESTURE2
+    {444, 3, 3},  // DO_SALUTE2
+    {0, 0, 0},    // DO_DOG_MAUL (N/A — RA's DO_ enum drops TD's hand-to-hand actions)
+};
+static InfantryTypeClass const TdRmbo(INFANTRY_TDRMBO, // Infantry type number.
+                                      TXT_E7,          // Translate name number (RA hero-unit slot; HD display via launcher text).
+                                      "TDRMBO",        // INI name for infantry.
+                                      0x0035,          // Vertical offset (standard standing infantry).
+                                      0x0010,          // Primary weapon offset along centerline.
+                                      false,           // Is this a female type?
+                                      true,            // Has crawling animation frames? (TD RMBO: yes)
+                                      false,           // Is this a civilian?
+                                      false,           // Does this unit use the override remap table?
+                                      false,           // Always use the given name for the infantry?
+                                      false,           // Theater specific graphic image?
+                                      PIP_COMMANDO,    // Transport pip shape/color to use.
+                                      TdCommandoDoControls,
+                                      TdCommandoDoControls,
+                                      2,               // Frame of projectile launch (TD RMBO).
+                                      2,               // Frame of projectile launch while prone.
+                                      0                // pointer to override remap table
+);
+
 // Bazooka
 static InfantryTypeClass const E3(INFANTRY_E3, // Infantry type number.
                                   TXT_E3,      // Translate name number for infantry type.
@@ -1400,6 +1500,8 @@ void InfantryTypeClass::Init_Heap(void)
     new InfantryTypeClass(TdE3);
     new InfantryTypeClass(TdE4);
     new InfantryTypeClass(TdE5);
+    new InfantryTypeClass(TdE6);
+    new InfantryTypeClass(TdRmbo);
 }
 
 /***********************************************************************************************
@@ -1678,6 +1780,22 @@ void InfantryTypeClass::One_Time(void)
     }
     if (tde5.CameoData == NULL) {
         ((void const*&)tde5.CameoData) = As_Reference(INFANTRY_E4).CameoData;
+    }
+
+    InfantryTypeClass& tde6 = As_Reference(INFANTRY_TDE6);  // TD Engineer -- donor RENOVATOR (RA's engineer dims).
+    if (tde6.ImageData == NULL) {
+        ((void const*&)tde6.ImageData) = As_Reference(INFANTRY_RENOVATOR).ImageData;
+    }
+    if (tde6.CameoData == NULL) {
+        ((void const*&)tde6.CameoData) = As_Reference(INFANTRY_RENOVATOR).CameoData;
+    }
+
+    InfantryTypeClass& tdrmbo = As_Reference(INFANTRY_TDRMBO);  // TD Commando -- donor E1 (standard male-soldier dims).
+    if (tdrmbo.ImageData == NULL) {
+        ((void const*&)tdrmbo.ImageData) = As_Reference(INFANTRY_E1).ImageData;
+    }
+    if (tdrmbo.CameoData == NULL) {
+        ((void const*&)tdrmbo.CameoData) = As_Reference(INFANTRY_E1).CameoData;
     }
 }
 

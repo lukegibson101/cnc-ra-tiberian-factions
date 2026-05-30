@@ -655,6 +655,7 @@ bool RulesClass::Heap_Maximums(CCINIClass& ini)
     new WarheadTypeClass("TDAP");    // WARHEAD_TDAP (TD armor-piercing — APDS / SAM / Dragon)
     new WarheadTypeClass("TDFire");   // WARHEAD_TDFIRE (TD incendiary — Flamethrower E4)
     new WarheadTypeClass("TDChemWar"); // WARHEAD_TDCHEM (TD chem spray — HE table + Explosion=0; E5)
+    new WarheadTypeClass("TDHollow");  // WARHEAD_TDHOLLOW (TD hollow-point — Commando sniper; anti-infantry)
 
     Weapons.Set_Heap(WeaponMax);
     new WeaponTypeClass("Colt45");
@@ -723,6 +724,7 @@ bool RulesClass::Heap_Maximums(CCINIClass& ini)
     new WeaponTypeClass("TDDragon");     // WEAPON_TDDRAGON (TD Rocket Soldier launcher, E3)
     new WeaponTypeClass("TDFlamethrower"); // WEAPON_TDFLAME (TD Flamethrower, E4)
     new WeaponTypeClass("TDChemspray");  // WEAPON_TDCHEM (TD Chem Warrior spray, E5)
+    new WeaponTypeClass("TDRifle");      // WEAPON_TDRIFLE (TD Commando sniper, RMBO)
 
     // Tiberian Factions mod: mark TD-ported weapons so WeaponTypeClass::Read_INI
     // parses Speed= as raw MPHType (TD source convention) instead of RA's
@@ -753,6 +755,10 @@ bool RulesClass::Heap_Maximums(CCINIClass& ini)
     // BULLET_TDCHEM carries WARHEAD_TDHE; the visible jet is the ANIM_CHEM_N directional
     // muzzle anim (techno.cpp), not a projectile sprite. Mechanically the flamethrower's twin.
     WeaponTypeClass::As_Pointer(Weapon_From_Name("TDChemspray"))->IsTDPort = true;
+    // TDRifle (Commando): IsTDPort gives TD's single-shooter cadence (Rearm_Delay
+    // ROF+3) + raw Speed parse. Its invisible BULLET_TDBULLET takes WARHEAD_TDHOLLOW
+    // from the weapon (anti-infantry); the round is a reused "50cal" (non-IsTDPort).
+    WeaponTypeClass::As_Pointer(Weapon_From_Name("TDRifle"))->IsTDPort = true;
 
     return (true);
 }

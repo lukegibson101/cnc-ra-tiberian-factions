@@ -84,8 +84,18 @@ The launcher's `Techno_Draw_Object` overlay then renders the real `TDxx` sprite 
 
 ---
 
-## The roster ahead
+## The roster — COMPLETE (2026-05-30)
 
-**Shipped:** E1 Minigunner, E2 Grenadier, E3 Rocket Soldier, **E4 Flamethrower** (the first muzzle-anim weapon — its directional-flame + green-placeholder donor sub-recipe is playbook §3.26), **E5 Chem Warrior** (Nod, Temple-gated; the flamethrower's reskinned twin — see §3.26 (d) impact-explosion leak + (e) classic-SHP parity).
+**Shipped:** E1 Minigunner, E2 Grenadier, E3 Rocket Soldier, **E4 Flamethrower** (first muzzle-anim weapon — §3.26), **E5 Chem Warrior** (Nod, Temple-gated; flamethrower's reskinned twin — §3.26 d/e), **E6 Engineer** (no weapon; faction-conditional capture — §3.27), **Commando** (125-dmg sniper + C4 + the iconic RAMBO voices). The full TD infantry roster is ported.
 
-**Remaining:** **Commando** (`M16` + the `VOC_RAMBO_*` on-fire/on-kill voices — pre-staged); **Engineer** (no weapon). Each follows steps 1–10; `scripts/bundle_unit.py` (+ `--tileset-donor` when there's no RA equivalent) + the donor-ImageData fix make the per-unit cost small now that the recipe is proven.
+**Commando (`INFANTRY_TDRMBO`) — key facts:**
+- Weapon is **`WEAPON_RIFLE`** (125-dmg `BULLET_SNIPER`), **NOT M16** — our own roster doc had it wrong (playbook §2.1). Reuses the invisible `BULLET_TD50cal`; new `WARHEAD_TDHollow` (`{1.0,0.03,0.03,0.03,0.03}`) one-shots infantry / ~nil vs armor. Sound `RAMGUN2` (base asset, `RAC/RAR_SFX_RAMGUN2`).
+- **C4 building-destroy = `C4=yes` → `IsBomber`.** TD hardcodes C4 to `INFANTRY_RAMBO`; RA generalised it to the flag — same mechanic, **zero runtime code**. (`IsBomber` also implies `IsCapture`, but `What_Action` routes a bomber to ACTION_SABOTAGE, so it never hits the engineer-capture path.)
+- **Both factions build it** via `Prerequisite=atek` — the existing Eye(GDI)/Temple(Nod) `STRUCT_ADVANCED_TECH` remap (house.cpp), same idiom as TDMCV and RA's Tanya. RA's `Prerequisite=` is an AND-list, so this is the only way to OR two faction tech-centres.
+- **RAMBO one-liners already ship in the base `SFX2D_EN-US.MEG`** (`TDC/TDR_SFX_CMD_<NAME>_EN-US`). Wired as `RAC/RAR_SFX_TD<NAME>` localized SFXEvents (IN_NOVAR → no `.V0x` suffix, name passes through clean) + a `*this == INFANTRY_TDRMBO` case in `Response_Select/Move/Attack` **before** the GDI/Nod intercept. `PIP_COMMANDO`. No new asset bundling for voices.
+- **468-frame sprite has no exact-count RA donor** → `bundle_unit.py` now slices a larger donor (E1, 532) down to the ZIP frame count (new `frame_count` param). Generalises to any future unit without a matching donor.
+
+**Engineer (`INFANTRY_TDE6`) — key facts:**
+- No weapon; `Infiltrate=yes` → `IsCapture`. **BUT capture is `INFANTRY_RENOVATOR`-gated** across ~15 sites — a new engine type must be added at the **execution** (`infantry.cpp` Per_Cell_Process), the **cursor** (`What_Action`), and **AI capture-targeting** (`foot.cpp`) or it does not capture *at all*. See §3.27.
+- **Faction-conditional capture** (Luke's call): GDI/Nod (`House->ActLike` GOOD/BAD) capture **single** (one engineer, any building health = TD); Allied/Soviet keep RA's Aftermath **multi**-engineer (damage to ConditionRed, then take). Gate is on the engineer's owner.
+- **Capture-only** — the RA engineer's friendly mega-repair is gated to RENOVATOR, so TDE6 has no repair action (TD-authentic).

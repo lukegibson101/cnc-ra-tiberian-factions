@@ -53,7 +53,7 @@ def repack_zip(td_asset, ininame, meg_path):
     return dest, count_frames(dest)
 
 
-def clone_tileset_block(td_asset, ininame, donor=None):
+def clone_tileset_block(td_asset, ininame, donor=None, frame_count=None):
     """Clone the contiguous <donor> Tile run in RA_UNITS.XML into <ininame>.
 
     `donor` defaults to `td_asset` (the usual case: RA already ships a tileset
@@ -63,6 +63,12 @@ def clone_tileset_block(td_asset, ininame, donor=None):
     flame share a byte-identical DO table + 660-frame layout). The cloned
     block is renamed to `ininame` and its frame paths re-pointed to
     `<ininame>\\...`, so the sprite still loads from our TD-prefixed ZIP.
+
+    `frame_count` (when given) forces the emitted block to exactly that many
+    Shape-ordered tiles — slicing a larger donor down. Use it when no RA unit
+    has a tile run matching the TD asset's frame count (e.g. the Commando =
+    468 frames; the closest donors are larger). The tiles are Shape-ordered
+    0..N-1 and each re-points to <ininame>-NNNN, so frames==tiles always.
     """
     donor = donor or td_asset
     content = RA_UNITS_XML.read_text(encoding="utf-8")
@@ -77,6 +83,14 @@ def clone_tileset_block(td_asset, ininame, donor=None):
         content, flags=re.DOTALL)
     if not tiles:
         raise RuntimeError(f"No <Name>{donor}</Name> tiles found in RA_UNITS.XML")
+
+    # When the donor's frame count doesn't match the TD asset, slice the
+    # Shape-ordered run to the exact ZIP frame count (donor must have enough).
+    if frame_count is not None:
+        if len(tiles) < frame_count:
+            raise RuntimeError(
+                f"donor {donor} has {len(tiles)} tiles < {frame_count} needed for {ininame}")
+        tiles = tiles[:frame_count]
 
     old_fp = f"{donor.lower()}\\{donor.lower()}-"
     new_fp = f"{ininame.lower()}\\{ininame.lower()}-"
@@ -108,7 +122,8 @@ def main():
 
     meg = source_meg_path()
     zip_dest, frames = repack_zip(args.td_asset, args.ininame, meg)
-    tiles = clone_tileset_block(args.td_asset, args.ininame, donor=args.tileset_donor)
+    tiles = clone_tileset_block(args.td_asset, args.ininame, donor=args.tileset_donor,
+                                frame_count=frames)
     patch_rabuildables_xml(args.ininame, args.text_name, args.text_desc, args.build_icon)
 
     print(f"  ZIP:          {zip_dest}  ({frames} frames)")

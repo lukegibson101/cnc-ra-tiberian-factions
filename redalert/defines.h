@@ -1656,6 +1656,8 @@ typedef enum InfantryType : char
     INFANTRY_TDE3, // TD Rocket Soldier (E3) — GDI+Nod, fires TDDragon homing missile (anti-armor/air).
     INFANTRY_TDE4, // TD Flamethrower (E4) — Nod-only, fires TDFlame (invisible round + directional flame jet).
     INFANTRY_TDE5, // TD Chem Warrior (E5) — Nod-only, fires TDChem (invisible round + directional chem-spray jet).
+    INFANTRY_TDE6,   // TD Engineer (E6) — no weapon; captures buildings (Infiltrate). GDI+Nod, barracks-level.
+    INFANTRY_TDRMBO, // TD Commando (RMBO) — 125-dmg sniper (one-shots infantry) + C4 building-destroy. GDI+Nod, tech-center gated.
 
     INFANTRY_COUNT,
     INFANTRY_FIRST = 0
@@ -2789,6 +2791,7 @@ typedef enum WarheadType : char
     WARHEAD_TDAP,  // TD armor-piercing (WARHEAD_AP) — Spread 6, verses {0.25,0.75,0.75,1.0,0.5}, destroys wall+wood (APDS / SAM / Dragon).
     WARHEAD_TDFIRE, // TD incendiary (WARHEAD_FIRE) — Spread 8, verses {0.88,1.0,0.69,0.25,0.5}, destroys wood+tiberium not wall (Flamethrower).
     WARHEAD_TDCHEM, // TD chem spray — HE damage table (== TDHE) but Explosion=0 (TD ClassChem impact = ANIM_NONE). Separate from TDHE so the grenadier keeps its blast.
+    WARHEAD_TDHOLLOW, // TD hollow-point (WARHEAD_HOLLOW_POINT) — Commando sniper. Spread 4, verses {1.0,0.03,0.03,0.03,0.03}: one-shots infantry, ~nil vs armor/buildings.
 
     WARHEAD_COUNT,
     WARHEAD_FIRST = 0
@@ -2867,6 +2870,7 @@ typedef enum WeaponType : char
     WEAPON_TDDRAGON,       // TD Rocket Soldier launcher (E3) — Dmg30/ROF60/Range4, BULLET_TDTOW, WARHEAD_TDAP, Report=BAZOOK1.
     WEAPON_TDFLAME,        // TD Flamethrower (E4, Nod) — Dmg35/ROF50/Range2, BULLET_TDFLAME, WARHEAD_TDFIRE, Anim=FLAME-N.
     WEAPON_TDCHEM,         // TD Chem Warrior spray (E5, Nod) — Dmg80/ROF70/Range2, BULLET_TDCHEM, WARHEAD_TDHE (bullet warhead), Report=FLAMER2, Anim=CHEM-N.
+    WEAPON_TDRIFLE,        // TD Commando sniper (RMBO) — Dmg125/ROF40/Range5.5, BULLET_TDBULLET, WARHEAD_TDHOLLOW, Report=RAMGUN2.
 
     WEAPON_COUNT,
     WEAPON_FIRST = 0
@@ -3490,6 +3494,24 @@ typedef enum VocType : short
     VOC_TD_TOSS,         // TD grenade toss (TOSS1) — WEAPON_TDGRENADE Report=
     VOC_TD_BAZOOKA,      // TD Rocket Soldier launch (BAZOOK1) — WEAPON_TDDRAGON Report=
     VOC_TD_FLAMER,       // TD Flamethrower (FLAMER2) — WEAPON_TDFLAME Report= (TD VOC_FLAMER1 maps to file FLAMER2)
+    VOC_TD_SNIPER,       // TD Commando silenced rifle (RAMGUN2) — WEAPON_TDRIFLE Report=
+    // TD Commando (RMBO) one-liners — single-take CMD voices (IN_NOVAR), routed via
+    // RAC/RAR_SFX_TD<NAME> in SFXEVENTSLOCALIZED.XML -> base TDC/TDR_SFX_CMD_<NAME>_EN-US.
+    // Fired by InfantryClass::Response_Select/Move/Attack for INFANTRY_TDRMBO.
+    VOC_TD_CMD_BOMBIT,   // "I've got a present for ya" (BOMBIT1)
+    VOC_TD_CMD_CMON,     // "c'mon" (CMON1)
+    VOC_TD_CMD_GOTIT,    // "you got it" (GOTIT1)
+    VOC_TD_CMD_KEEPEM,   // "keep 'em comin'" (KEEPEM1)
+    VOC_TD_CMD_LAUGH,    // "hahaha" (LAUGH1)
+    VOC_TD_CMD_LEFTY,    // "that was left handed" (LEFTY1)
+    VOC_TD_CMD_NOPROB,   // "no problem" (NOPRBLM1)
+    VOC_TD_CMD_ONIT,     // "I'm on it" (ONIT1)
+    VOC_TD_CMD_YELL,     // "ahhhhh" (RAMYELL1)
+    VOC_TD_CMD_ROCK,     // "time to rock and roll" (ROKROLL1)
+    VOC_TD_CMD_TUFF,     // "real tough guy" (TUFFGUY1)
+    VOC_TD_CMD_YEAH,     // "yea" (YEAH1)
+    VOC_TD_CMD_YES,      // "yes" (YES1)
+    VOC_TD_CMD_YO,       // "yo" (YO1)
 
     VOC_COUNT,
     VOC_FIRST = 0

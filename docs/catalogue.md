@@ -1008,8 +1008,8 @@ All seven of the original open questions were resolved 2026-05-19:
 > are **in and Deck-verified** (full TD weapon chains, voices, cameos). See
 > `td-infantry-port-recipe.md`. The remaining items below are still future work.
 
-- TD-themed infantry per faction — **✅ Minigunner / Grenadier / Rocket Soldier shipped**; Engineer, Flamethrower, etc. still to come.
-- TD-themed vehicles per faction (Light Tank, Medium Tank, Mammoth Tank, Buggy, Recon Bike, etc.).
+- TD-themed infantry per faction — **✅ ROSTER COMPLETE (2026-05-30):** Minigunner, Grenadier, Rocket Soldier, Flamethrower, Chem Warrior, Engineer (faction-conditional single/multi capture), Commando (sniper + C4 + RAMBO voices). See `td-infantry-port-recipe.md`.
+- TD-themed vehicles per faction (Light Tank, Medium Tank, Mammoth Tank, Buggy, Recon Bike, etc.) — **NEXT ARC.**
 - Ion Cannon proper visual effect (engine work).
 - TD-themed walls (if v0.3's vanilla-walls compromise feels wrong).
 - TD-themed Hospital / Bio Lab if there's player demand.
