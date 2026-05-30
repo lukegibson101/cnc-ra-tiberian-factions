@@ -53,8 +53,18 @@ def repack_zip(td_asset, ininame, meg_path):
     return dest, count_frames(dest)
 
 
-def clone_tileset_block(td_asset, ininame):
-    """Clone the contiguous <td_asset> Tile run in RA_UNITS.XML into <ininame>."""
+def clone_tileset_block(td_asset, ininame, donor=None):
+    """Clone the contiguous <donor> Tile run in RA_UNITS.XML into <ininame>.
+
+    `donor` defaults to `td_asset` (the usual case: RA already ships a tileset
+    block under the TD asset's name, e.g. E1/E4). When the TD unit has NO RA
+    equivalent to clone (e.g. E5 chem warrior — RA never had one), pass a
+    structurally-identical RA unit as `donor` (E4 flamethrower: TD's chem and
+    flame share a byte-identical DO table + 660-frame layout). The cloned
+    block is renamed to `ininame` and its frame paths re-pointed to
+    `<ininame>\\...`, so the sprite still loads from our TD-prefixed ZIP.
+    """
+    donor = donor or td_asset
     content = RA_UNITS_XML.read_text(encoding="utf-8")
 
     # Idempotent: strip any prior <ininame> tiles.
@@ -63,15 +73,15 @@ def clone_tileset_block(td_asset, ininame):
         "", content, flags=re.DOTALL)
 
     tiles = re.findall(
-        rf"[ \t]*<Tile>\s*<Key>\s*<Name>{td_asset}</Name>.*?</Tile>\n",
+        rf"[ \t]*<Tile>\s*<Key>\s*<Name>{donor}</Name>.*?</Tile>\n",
         content, flags=re.DOTALL)
     if not tiles:
-        raise RuntimeError(f"No <Name>{td_asset}</Name> tiles found in RA_UNITS.XML")
+        raise RuntimeError(f"No <Name>{donor}</Name> tiles found in RA_UNITS.XML")
 
-    old_fp = f"{td_asset.lower()}\\{td_asset.lower()}-"
+    old_fp = f"{donor.lower()}\\{donor.lower()}-"
     new_fp = f"{ininame.lower()}\\{ininame.lower()}-"
     block = "".join(
-        t.replace(f"<Name>{td_asset}</Name>", f"<Name>{ininame}</Name>")
+        t.replace(f"<Name>{donor}</Name>", f"<Name>{ininame}</Name>")
          .replace(old_fp, new_fp)
         for t in tiles)
 
@@ -91,11 +101,14 @@ def main():
     ap.add_argument("--build-icon", required=True, help="vanilla TD BuildIcon_* region")
     ap.add_argument("--text-name", required=True, help="ObjectNameTextID")
     ap.add_argument("--text-desc", required=True, help="ObjectDescriptionTextID")
+    ap.add_argument("--tileset-donor", default=None,
+                    help="RA_UNITS.XML block to clone when the TD asset has no RA "
+                         "equivalent (e.g. E4 for E5 chem warrior). Defaults to td_asset.")
     args = ap.parse_args()
 
     meg = source_meg_path()
     zip_dest, frames = repack_zip(args.td_asset, args.ininame, meg)
-    tiles = clone_tileset_block(args.td_asset, args.ininame)
+    tiles = clone_tileset_block(args.td_asset, args.ininame, donor=args.tileset_donor)
     patch_rabuildables_xml(args.ininame, args.text_name, args.text_desc, args.build_icon)
 
     print(f"  ZIP:          {zip_dest}  ({frames} frames)")

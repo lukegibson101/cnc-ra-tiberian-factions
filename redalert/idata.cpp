@@ -744,6 +744,31 @@ static InfantryTypeClass const TdE4(INFANTRY_TDE4, // Infantry type number.
                                     0              // pointer to override remap table
 );
 
+// Tiberian Factions -- TD Chem Warrior (INFANTRY_TDE5), ported from TD's E5
+// (tiberiandawn/idata.cpp:412). NOD-ONLY (TD's E5 = HOUSEF_BAD, GOOD commented out).
+// TD's ChemwarriorDos is BYTE-IDENTICAL to FlamethrowerDos (chem & flame share the TD
+// sprite layout), so it reuses TdFlamethrowerDoControls verbatim. No TXT_E5 in RA ->
+// TXT_E4 fallback (display is rules.ini [TDE5] Name=). Fires TDChemspray -- invisible
+// BULLET_TDCHEM + the directional ANIM_CHEM_N muzzle jet (techno.cpp dispatch).
+static InfantryTypeClass const TdE5(INFANTRY_TDE5, // Infantry type number.
+                                    TXT_E4,        // Translate name number (no TXT_E5 in RA; display via rules.ini Name=).
+                                    "TDE5",        // INI name for infantry.
+                                    0x0035,        // Vertical offset (matches RA's E4 -- shares the flamethrower/chem sprite layout).
+                                    0x0010,        // Primary weapon offset along centerline.
+                                    false,         // Is this a female type?
+                                    true,          // Has crawling animation frames?
+                                    false,         // Is this a civilian?
+                                    false,         // Does this unit use the override remap table?
+                                    false,         // Always use the given name for the infantry?
+                                    false,         // Theater specific graphic image?
+                                    PIP_FULL,      // Transport pip shape/color to use.
+                                    TdFlamethrowerDoControls, // TD ChemwarriorDos == FlamethrowerDos (verbatim).
+                                    TdFlamethrowerDoControls,
+                                    2,             // Frame of projectile launch (TD E5).
+                                    0,             // Frame of projectile launch while prone (TD E5).
+                                    0              // pointer to override remap table
+);
+
 // Bazooka
 static InfantryTypeClass const E3(INFANTRY_E3, // Infantry type number.
                                   TXT_E3,      // Translate name number for infantry type.
@@ -1374,6 +1399,7 @@ void InfantryTypeClass::Init_Heap(void)
     new InfantryTypeClass(TdE2);
     new InfantryTypeClass(TdE3);
     new InfantryTypeClass(TdE4);
+    new InfantryTypeClass(TdE5);
 }
 
 /***********************************************************************************************
@@ -1644,6 +1670,14 @@ void InfantryTypeClass::One_Time(void)
     }
     if (tde4.CameoData == NULL) {
         ((void const*&)tde4.CameoData) = As_Reference(INFANTRY_E4).CameoData;
+    }
+
+    InfantryTypeClass& tde5 = As_Reference(INFANTRY_TDE5);  // TD Chem Warrior -- donor E4 (shares the flamethrower sprite dims).
+    if (tde5.ImageData == NULL) {
+        ((void const*&)tde5.ImageData) = As_Reference(INFANTRY_E4).ImageData;
+    }
+    if (tde5.CameoData == NULL) {
+        ((void const*&)tde5.CameoData) = As_Reference(INFANTRY_E4).CameoData;
     }
 }
 

@@ -1346,6 +1346,7 @@ typedef enum BulletType : char
     BULLET_TDBULLET, // TD small-arms invisible round ("50cal") — Pistol/M16/M60MG; warhead set on the weapon.
     BULLET_TDTOW, // TD Rocket Soldier missile (E3 Dragon/TOW) — Homing, visible 32-frame rotating, WARHEAD_TDAP.
     BULLET_TDFLAME, // TD Flamethrower round (E4) — invisible; the visible effect is the ANIM_FLAME_N muzzle jet.
+    BULLET_TDCHEM, // TD Chem Warrior spray (E5) — invisible; the visible effect is the ANIM_CHEM_N muzzle jet. Warhead=TDHE.
 
     BULLET_COUNT,
     BULLET_FIRST = 0
@@ -1654,6 +1655,7 @@ typedef enum InfantryType : char
     INFANTRY_TDE2, // TD Grenadier (E2) — GDI-only, lobs TDGrenade (visible arc).
     INFANTRY_TDE3, // TD Rocket Soldier (E3) — GDI+Nod, fires TDDragon homing missile (anti-armor/air).
     INFANTRY_TDE4, // TD Flamethrower (E4) — Nod-only, fires TDFlame (invisible round + directional flame jet).
+    INFANTRY_TDE5, // TD Chem Warrior (E5) — Nod-only, fires TDChem (invisible round + directional chem-spray jet).
 
     INFANTRY_COUNT,
     INFANTRY_FIRST = 0
@@ -2366,6 +2368,14 @@ typedef enum AnimType : char
     ANIM_FLAME_SW,
     ANIM_FLAME_W,
     ANIM_FLAME_NW,
+    ANIM_CHEM_N, // TD chem-warrior spray jet (E5) -- directional muzzle anim, 8 dirs in Dir_Facing order (kept contiguous after FLAME for the One_Time donor loop).
+    ANIM_CHEM_NE,
+    ANIM_CHEM_E,
+    ANIM_CHEM_SE,
+    ANIM_CHEM_S,
+    ANIM_CHEM_SW,
+    ANIM_CHEM_W,
+    ANIM_CHEM_NW,
     ANIM_LZ_SMOKE,
     ANIM_CRATE_DEVIATOR, // Red finned missile.
     ANIM_CRATE_DOLLAR,   // Dollar sign.
@@ -2778,6 +2788,7 @@ typedef enum WarheadType : char
     WARHEAD_TDSA,  // TD small arms (WARHEAD_SA) — Spread 2, verses {1.0,0.5,0.5625,0.25,0.25}, no destroy.
     WARHEAD_TDAP,  // TD armor-piercing (WARHEAD_AP) — Spread 6, verses {0.25,0.75,0.75,1.0,0.5}, destroys wall+wood (APDS / SAM / Dragon).
     WARHEAD_TDFIRE, // TD incendiary (WARHEAD_FIRE) — Spread 8, verses {0.88,1.0,0.69,0.25,0.5}, destroys wood+tiberium not wall (Flamethrower).
+    WARHEAD_TDCHEM, // TD chem spray — HE damage table (== TDHE) but Explosion=0 (TD ClassChem impact = ANIM_NONE). Separate from TDHE so the grenadier keeps its blast.
 
     WARHEAD_COUNT,
     WARHEAD_FIRST = 0
@@ -2855,6 +2866,7 @@ typedef enum WeaponType : char
     WEAPON_TDGRENADE,      // TD Grenadier toss (E2) — Dmg50/ROF60/Range3.25, Projectile=Lobbed (RA bomb), WARHEAD_TDHE.
     WEAPON_TDDRAGON,       // TD Rocket Soldier launcher (E3) — Dmg30/ROF60/Range4, BULLET_TDTOW, WARHEAD_TDAP, Report=BAZOOK1.
     WEAPON_TDFLAME,        // TD Flamethrower (E4, Nod) — Dmg35/ROF50/Range2, BULLET_TDFLAME, WARHEAD_TDFIRE, Anim=FLAME-N.
+    WEAPON_TDCHEM,         // TD Chem Warrior spray (E5, Nod) — Dmg80/ROF70/Range2, BULLET_TDCHEM, WARHEAD_TDHE (bullet warhead), Report=FLAMER2, Anim=CHEM-N.
 
     WEAPON_COUNT,
     WEAPON_FIRST = 0

@@ -90,6 +90,26 @@ ENTRIES=(
     # M5 Tier 4 — Temple of Nod (Nuclear Strike host).
     "TMPL.SHP:TDTMPL.SHP"
     "TMPLMAKE.SHP:TDTMPLMAKE.SHP"
+    # TD infantry muzzle jets — directional spray anims (E4 Flamethrower / E5 Chem Warrior).
+    # Classic SHPs so the jet renders in classic mode too (HD uses the RA_VFX TD<X>-<dir> tiles).
+    # 8 dirs each in Dir_Facing order; 13 frames, matching the ANIM_FLAME_*/ANIM_CHEM_* ctor stages.
+    # Loading these makes the FBALL1 donor-ImageData in adata.cpp One_Time a no-op.
+    "FLAME-N.SHP:TDFLAME-N.SHP"
+    "FLAME-NE.SHP:TDFLAME-NE.SHP"
+    "FLAME-E.SHP:TDFLAME-E.SHP"
+    "FLAME-SE.SHP:TDFLAME-SE.SHP"
+    "FLAME-S.SHP:TDFLAME-S.SHP"
+    "FLAME-SW.SHP:TDFLAME-SW.SHP"
+    "FLAME-W.SHP:TDFLAME-W.SHP"
+    "FLAME-NW.SHP:TDFLAME-NW.SHP"
+    "CHEM-N.SHP:TDCHEM-N.SHP"
+    "CHEM-NE.SHP:TDCHEM-NE.SHP"
+    "CHEM-E.SHP:TDCHEM-E.SHP"
+    "CHEM-SE.SHP:TDCHEM-SE.SHP"
+    "CHEM-S.SHP:TDCHEM-S.SHP"
+    "CHEM-SW.SHP:TDCHEM-SW.SHP"
+    "CHEM-W.SHP:TDCHEM-W.SHP"
+    "CHEM-NW.SHP:TDCHEM-NW.SHP"
 )
 
 # Extract each SHP from CONQUER.MIX, palette-remap it for RA classic mode,

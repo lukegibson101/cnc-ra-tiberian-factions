@@ -2331,6 +2331,20 @@ static AnimTypeClass const FlameSW(ANIM_FLAME_SW, "TDFLAME-SW", 48, 9, false, fa
 static AnimTypeClass const FlameW(ANIM_FLAME_W, "TDFLAME-W", 48, 9, false, false, false, false, false, false, false, false, true, 0, 1, 0, 0, 0, 13, 0, VOC_NONE, ANIM_NONE, 13, 0x200);
 static AnimTypeClass const FlameNW(ANIM_FLAME_NW, "TDFLAME-NW", 48, 9, false, false, false, false, false, false, false, false, true, 0, 1, 0, 0, 0, 13, 0, VOC_NONE, ANIM_NONE, 13, 0x200);
 
+// Tiberian Factions -- TD chem-warrior directional spray jets (ANIM_CHEM_*, E5).
+// Ported from tiberiandawn/adata.cpp ChemN.. -- structurally identical to the flame
+// jets above (8 dirs, 13 stages) EXCEPT IsFlameThrower=false (TD's ChemN sets it
+// false; it's inert in RA but kept source-faithful). Art renders from the bundled
+// TDCHEM-<dir> tiles (RA_VFX.XML) via the One_Time donor-ImageData fix below.
+static AnimTypeClass const ChemN(ANIM_CHEM_N, "TDCHEM-N", 48, 9, false, false, false, false, false, false, false, false, false, 0, 1, 0, 0, 0, 13, 0, VOC_NONE, ANIM_NONE, 13, 0x200);
+static AnimTypeClass const ChemNE(ANIM_CHEM_NE, "TDCHEM-NE", 48, 9, false, false, false, false, false, false, false, false, false, 0, 1, 0, 0, 0, 13, 0, VOC_NONE, ANIM_NONE, 13, 0x200);
+static AnimTypeClass const ChemE(ANIM_CHEM_E, "TDCHEM-E", 48, 9, false, false, false, false, false, false, false, false, false, 0, 1, 0, 0, 0, 13, 0, VOC_NONE, ANIM_NONE, 13, 0x200);
+static AnimTypeClass const ChemSE(ANIM_CHEM_SE, "TDCHEM-SE", 48, 9, false, false, false, false, false, false, false, false, false, 0, 1, 0, 0, 0, 13, 0, VOC_NONE, ANIM_NONE, 13, 0x200);
+static AnimTypeClass const ChemS(ANIM_CHEM_S, "TDCHEM-S", 48, 9, false, false, false, false, false, false, false, false, false, 0, 1, 0, 0, 0, 13, 0, VOC_NONE, ANIM_NONE, 13, 0x200);
+static AnimTypeClass const ChemSW(ANIM_CHEM_SW, "TDCHEM-SW", 48, 9, false, false, false, false, false, false, false, false, false, 0, 1, 0, 0, 0, 13, 0, VOC_NONE, ANIM_NONE, 13, 0x200);
+static AnimTypeClass const ChemW(ANIM_CHEM_W, "TDCHEM-W", 48, 9, false, false, false, false, false, false, false, false, false, 0, 1, 0, 0, 0, 13, 0, VOC_NONE, ANIM_NONE, 13, 0x200);
+static AnimTypeClass const ChemNW(ANIM_CHEM_NW, "TDCHEM-NW", 48, 9, false, false, false, false, false, false, false, false, false, 0, 1, 0, 0, 0, 13, 0, VOC_NONE, ANIM_NONE, 13, 0x200);
+
 void AnimTypeClass::Init_Heap(void)
 {
     /*
@@ -2387,6 +2401,14 @@ void AnimTypeClass::Init_Heap(void)
     new AnimTypeClass(FlameSW);
     new AnimTypeClass(FlameW);
     new AnimTypeClass(FlameNW);
+    new AnimTypeClass(ChemN);
+    new AnimTypeClass(ChemNE);
+    new AnimTypeClass(ChemE);
+    new AnimTypeClass(ChemSE);
+    new AnimTypeClass(ChemS);
+    new AnimTypeClass(ChemSW);
+    new AnimTypeClass(ChemW);
+    new AnimTypeClass(ChemNW);
     new AnimTypeClass(LZSmoke);
     new AnimTypeClass(CDeviator);
     new AnimTypeClass(CDollar);
@@ -2486,7 +2508,9 @@ void AnimTypeClass::One_Time(void)
 
 #ifdef REMASTER_BUILD
     /*
-    **	Tiberian Factions: the TD Flamethrower's directional muzzle jets (TDFLAME-N..NW)
+    **	Tiberian Factions: the TD Flamethrower (TDFLAME-N..NW) AND Chem Warrior (TDCHEM-N..NW)
+    **	directional muzzle jets -- the ANIM_FLAME_* and ANIM_CHEM_* enums are kept contiguous so this
+    **	one loop donors both. The TD jet anims
     **	are HD-tile-only -- no classic SHP in any MIX -- so the loop above leaves their
     **	ImageData NULL and the GlyphX overlay draws a green placeholder instead of
     **	resolving the RA_VFX TDFLAME-<dir> tile. Identical fix to ANIM_BEACON_VIRTUAL
@@ -2496,7 +2520,7 @@ void AnimTypeClass::One_Time(void)
     */
     {
         void const* flame_donor = As_Reference(ANIM_FBALL1).ImageData;
-        for (int fa = ANIM_FLAME_N; fa <= ANIM_FLAME_NW; fa++) {
+        for (int fa = ANIM_FLAME_N; fa <= ANIM_CHEM_NW; fa++) {
             if (As_Reference((AnimType)fa).ImageData == NULL) {
                 ((void const*&)As_Reference((AnimType)fa).ImageData) = flame_donor;
             }

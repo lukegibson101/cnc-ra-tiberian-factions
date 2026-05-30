@@ -196,6 +196,7 @@ void BulletTypeClass::Init_Heap(void)
     new BulletTypeClass("TD50cal");       //	BULLET_TDBULLET (TD small-arms invisible round — M16/Pistol/M60MG)
     new BulletTypeClass("TDTOW");         //	BULLET_TDTOW (TD Rocket Soldier Dragon/TOW missile, E3)
     new BulletTypeClass("TDFlame");       //	BULLET_TDFLAME (TD flamethrower invisible round, E4)
+    new BulletTypeClass("TDChem");        //	BULLET_TDCHEM (TD chem warrior invisible spray round, E5)
 
     // Tiberian Factions mod: mark every TD-ported bullet so BulletClass::AI /
     // Unlimbo dispatch to the verbatim TD code path. Per

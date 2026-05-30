@@ -3442,6 +3442,10 @@ bool TechnoClass::Evaluate_Object(ThreatType method,
             case ANIM_FLAME_N:
                 a = AnimType(ANIM_FLAME_N + Dir_Facing(Fire_Direction())); // TD-faithful (techno.cpp:2378)
                 break;
+
+            case ANIM_CHEM_N:
+                a = AnimType(ANIM_CHEM_N + Dir_Facing(Fire_Direction())); // TD-faithful (techno.cpp:2376-2378, same dispatch as FLAME/GUN)
+                break;
             }
 
             /*
@@ -3458,7 +3462,7 @@ bool TechnoClass::Evaluate_Object(ThreatType method,
                 if (anim != NULL) {
                     anim->Attach_To(this);
                 }
-#if 0 // TF DEV: flame-anim diagnostic (stub; flip to 1 to re-enable)
+#if 0 // TF DEV: muzzle-anim diagnostic (logs-first per [[feedback-logs-first-on-new-units]]; covers any IsTDPort weapon -- E4 flame + E5 chem). VERIFIED: chem+flame jets dispatch+render in HD. Flip to 1 to re-enable.
                 if (weapon->IsTDPort) {
                     static FILE* ff = NULL;
                     if (ff == NULL) {
